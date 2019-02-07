@@ -11,7 +11,7 @@ const socket = io(window.location.origin)
 
 
 ReactDOM.render(
-    <MessageContainer MessageTexts= {[['Text 1']]}/>,
+    <MessageContainer Messages= {[]}/>,
     document.getElementById('root')
 )
 

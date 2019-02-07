@@ -7,7 +7,7 @@ import TextParagraphs from './TextParagraphs'
 import {MessageData} from './MessageContainer'
 
 interface MessageElementProp{
-    messageDate: MessageData,
+    messageData: MessageData,
     onTextChange: (messageID: string, text: string[]) => void
 }
 interface MessageElementState{
@@ -32,8 +32,8 @@ export default class MessageElement extends React.Component<MessageElementProp, 
         this.handleSubmit = this.handleSubmit.bind(this)
         this.autoGrow = this.autoGrow.bind(this)
 
-        if(this.props.messageDate.text && this.props.messageDate.text.length != 0) 
-            this.state = { text: this.props.messageDate.text.join('\n'), toggleEdit: false}
+        if(this.props.messageData.text && this.props.messageData.text.length != 0) 
+            this.state = { text: this.props.messageData.text.join('\n'), toggleEdit: false}
         else this.state = { text: '', toggleEdit: false}
     }
 
@@ -69,7 +69,7 @@ export default class MessageElement extends React.Component<MessageElementProp, 
     hideEdit(e: KeyboardEvent | MouseEvent | FormEvent) {
         e.preventDefault()
         if (this.canFinishEdit && this.state.toggleEdit) {
-            this.props.onTextChange(this.props.messageDate.messageID, this.state.text.split('\n'))
+            this.props.onTextChange(this.props.messageData.messageID, this.state.text.split('\n'))
             this.setState({toggleEdit: false})
         }
     }
@@ -116,7 +116,7 @@ export default class MessageElement extends React.Component<MessageElementProp, 
                  className="form-control bg-dark text-white" value={this.state.text}></textarea>,
             <p key="2" className="text-right" style={{marginBottom : '0rem'}}><a href="" onClick={this.toggleEditState}>Finish Edit</a></p>]
             ) : ( 
-                    [<TextParagraphs key="1" texts={this.props.messageDate.text}/>,
+                    [<TextParagraphs key="1" texts={this.props.messageData.text}/>,
                     <p key="2" className="text-right edit-button"
                      style={{marginBottom : '0rem', display: 'none'}}>
                      <a href="" onClick={this.toggleEditState} >Edit</a></p>]
