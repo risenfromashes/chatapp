@@ -2,6 +2,7 @@
 import React, { FormEvent, ChangeEvent, KeyboardEvent, ClipboardEvent, MouseEvent, ReactNode, CSSProperties } from 'react'
 import ReactDOM from 'react-dom'
 import $ from 'jquery'
+import uuidv1 from 'uuid/v1'
 
 import MessageElement from './MessageElement'
 
@@ -11,18 +12,20 @@ const socket = io(window.location.origin)
 
 
 
-interface MessageData{
-    key: number,
+export interface MessageData{
+    senderID: string,
+    senderIP: string,
+    messageID: string,
     text: string[]
 }
 
 interface MessageContainerProp{
-    MessageTexts: string[][]    
+    Messages: MessageData[]   
 }
 interface MessageContainerState{
     Messages: MessageData[],
-    id: string | undefined,
     ip: string | undefined,
+    id: string | undefined,
     connected: boolean,
     attemptingConnection: boolean
 }
@@ -34,14 +37,20 @@ export default class MessageContainer extends React.Component<MessageContainerPr
         super(props)        
         this.handleAddButtonClick = this.handleAddButtonClick.bind(this)
         this.handleChange = this.handleChange.bind(this)
-        this.count = this.props.MessageTexts.length
+        this.count = this.props.Messages.length
         this.state = {
-            Messages : this.props.MessageTexts.map((text,index) =>{
-                return {key: index, text}
+            Messages : this.props.Messages.map((Message,index) =>{
+                return {
+                    key: index,
+                    text: Message.text,
+                    senderIP: Message.senderIP,
+                    senderID: Message.senderID,
+                    messageID: Message.messageID                    
+                }
             }),
-            connected: false,
             id: undefined,
             ip: undefined,
+            connected: false,
             attemptingConnection: true
         }
 
@@ -65,13 +74,19 @@ export default class MessageContainer extends React.Component<MessageContainerPr
         })
         socket.on('textEdit', (newText: MessageData) =>{
             console.log(newText)
-            this.updateState(newText.key, newText.text)
+            if(newText.messageID) this.updateState(newText.messageID, newText.text)
         })
     }
-    addNew(){        
-        this.setState({
-            Messages: this.state.Messages.concat({key: this.count++, text: ['Say something! It costs you just a second!']})
-        })
+    addNew() {
+        if(this.state.id && this.state.ip)
+            this.setState({
+                Messages: this.state.Messages.concat({
+                    text: ['Say something! It costs you just a second!'],
+                    messageID: uuidv1(),
+                    senderID: this.state.id,
+                    senderIP: this.state.ip
+                })
+            })
     }
     handleAddButtonClick(){
         this.addNew()
@@ -79,16 +94,21 @@ export default class MessageContainer extends React.Component<MessageContainerPr
         this.newText = true         
     }
 
-    handleChange(key: number, newText: string[]){
-        this.updateState(key, newText)
-        socket.emit('newText', {key, text: newText})
+    handleChange(messageID: string, newText: string[]){
+        this.updateState(messageID, newText)
+        socket.emit('newText', {messageID, text: newText})
     }
 
-    private updateState(key: number, text : string[]){
+    private updateState(messageID: string, text : string[]){
         let prevMessagesState : MessageData[] = this.state.Messages
-        let newMessagesState: MessageData[] = prevMessagesState.map((MessageElement, index)=>{
-            if(index === key){
-                return  {key , text}
+        let newMessagesState: MessageData[] = prevMessagesState.map((MessageElement)=>{
+            if(MessageElement.messageID == messageID){
+                return  {
+                    messageID,
+                    text,
+                    senderID: MessageElement.messageID,
+                    senderIP: MessageElement.senderIP
+                }
             }
             else return MessageElement
         })
@@ -103,8 +123,9 @@ export default class MessageContainer extends React.Component<MessageContainerPr
             <div id="Texts" className="d-flex flex-column align-items-center w-100 py-4">
                 {this.state.connected ? 
                     ([<div key="1" className="messageContents w-100 mx-auto d-flex flex-column align-items-center">
-                        {this.state.Messages.map((Message) => {
-                            return <MessageElement key={Message.key} index={Message.key} text={Message.text} onTextChange={this.handleChange}></MessageElement>
+                        {this.state.Messages.map((Message, index) => {
+                            return <MessageElement key={index} messageDate={Message}
+                             onTextChange={this.handleChange}></MessageElement>
                         })}
                     </div>,
                     <button key="2" type="button" onClick={this.handleAddButtonClick} className="btn btn-success rounded-2 w-25 mt-2 py-auto" style={fontStyle}>+</button>])
