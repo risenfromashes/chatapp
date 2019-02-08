@@ -6,11 +6,13 @@ interface TextParagraphsProps{
 
 const TextParagraphs = (props : TextParagraphsProps)=>(
         <div className="text-container"> 
-            {props.texts.map((text: string, index)=>{
+            {(props.texts && props.texts.length>0)?
+            (props.texts.map((text: string, index)=>{
                 return (
                     <p key={index} className="text-left text-justify" style ={{wordBreak: 'break-word'}}>{text}</p>
                 )
-            })}
+            })):
+            (<p key="1" className="text-left text-justify" style ={{wordBreak: 'break-word'}}>''</p>)}
         </div>
 )
 

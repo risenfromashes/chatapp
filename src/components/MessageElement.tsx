@@ -3,23 +3,15 @@ import React, { FormEvent, ChangeEvent, KeyboardEvent, ClipboardEvent, MouseEven
 import ReactDOM from 'react-dom'
 import $ from 'jquery'
 
-import TextParagraphs from './TextParagraphs'
-import {MessageData} from './MessageContainer'
-
-interface MessageElementProp{
-    messageData: MessageData,
-    onTextChange: (messageID: string, text: string[]) => void
-}
-interface MessageElementState{
-    text : string,
-    toggleEdit: boolean
-}
+import TextParagraphs from '../components/TextParagraphs'
+import {MessageElementProp, MessageElementState} from '../types/MessageTypes'
+import getRandomColor from '../utils/colors'
 
 export default class MessageElement extends React.Component<MessageElementProp, MessageElementState>{
     
     private canFinishEdit = true
     private height: number = 50
-
+    private color: string 
 
     constructor(props: MessageElementProp){
         super(props)
@@ -31,6 +23,9 @@ export default class MessageElement extends React.Component<MessageElementProp, 
         this.handleMouseLeave = this.handleMouseLeave.bind(this)
         this.handleSubmit = this.handleSubmit.bind(this)
         this.autoGrow = this.autoGrow.bind(this)
+
+        this.color = getRandomColor()
+        console.log(this.color)
 
         if(this.props.messageData.text && this.props.messageData.text.length != 0) 
             this.state = { text: this.props.messageData.text.join('\n'), toggleEdit: false}
@@ -109,7 +104,7 @@ export default class MessageElement extends React.Component<MessageElementProp, 
     render() {
         let toggleEdit = this.state.toggleEdit
         return (<div onMouseEnter ={this.handleMouseEnter} onMouseLeave = {this.handleMouseLeave} onClick={this.showEdit}
-            className="border border-dark rounded my-2 px-3 py-3 text-white bg-secondary w-50 text-justify">            
+            className="border border-dark rounded my-2 px-3 py-3 text-white w-50 text-justify" style={{backgroundColor: this.color}}>            
             {toggleEdit ? (
                 [<textarea  key="1" onChange={this.handleChange} placeholder="Say Something" style= {{height: this.height, overflowY:'hidden'}} 
                     onKeyUp = {this.autoGrow} onPaste = {this.autoGrow} onSubmit={this.hideEdit} onKeyPress={this.handleSubmit}
