@@ -15,12 +15,14 @@ const io = socketIO.listen(server)
 
 //keeps all the messages from server startup
 let messageData: MessageData[] = []
+let connectedClientCount: number = 0
 
 io.on('connection', (socket: Socket) =>{
     
     let connectionState: ConnectionState = {
         ip: socket.handshake.address,
-        Messages: messageData
+        Messages: messageData,
+        connectionNo: ++connectedClientCount
     }
 
     console.log('client connected', socket.id, socket.handshake.address)

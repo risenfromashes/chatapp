@@ -11,7 +11,6 @@ export default class MessageElement extends React.Component<MessageElementProp, 
     
     private canFinishEdit = true
     private height: number = 50
-    private color: string 
 
     constructor(props: MessageElementProp){
         super(props)
@@ -23,9 +22,6 @@ export default class MessageElement extends React.Component<MessageElementProp, 
         this.handleMouseLeave = this.handleMouseLeave.bind(this)
         this.handleSubmit = this.handleSubmit.bind(this)
         this.autoGrow = this.autoGrow.bind(this)
-
-        this.color = getRandomColor()
-        console.log(this.color)
 
         if(this.props.messageData.text && this.props.messageData.text.length != 0) 
             this.state = { text: this.props.messageData.text.join('\n'), toggleEdit: false}
@@ -95,17 +91,17 @@ export default class MessageElement extends React.Component<MessageElementProp, 
     }
 
     handleMouseEnter(e: MouseEvent){
-        $(e.target).children('.edit-button').slideDown('slow')
+        if(this.props.editable) $(e.target).children('.edit-button').slideDown('slow')
     }
     handleMouseLeave(e: MouseEvent){
-        $(e.target).children('.edit-button').slideUp('slow')
+        if(this.props.editable) $(e.target).children('.edit-button').slideUp('slow')
     }
 
     render() {
         let toggleEdit = this.state.toggleEdit
         return (<div onMouseEnter ={this.handleMouseEnter} onMouseLeave = {this.handleMouseLeave} onClick={this.showEdit}
-            className="border border-dark rounded my-2 px-3 py-3 text-white w-50 text-justify" style={{backgroundColor: this.color}}>            
-            {toggleEdit ? (
+            className="border border-dark rounded my-2 px-3 py-3 text-white w-50 text-justify" style={{backgroundColor: this.props.messageData.color}}>            
+            {(toggleEdit && this.props.editable) ? (
                 [<textarea  key="1" onChange={this.handleChange} placeholder="Say Something" style= {{height: this.height, overflowY:'hidden'}} 
                     onKeyUp = {this.autoGrow} onPaste = {this.autoGrow} onSubmit={this.hideEdit} onKeyPress={this.handleSubmit}
                  className="form-control bg-dark text-white" value={this.state.text}></textarea>,
@@ -114,7 +110,7 @@ export default class MessageElement extends React.Component<MessageElementProp, 
                     [<TextParagraphs key="1" texts={this.props.messageData.text}/>,
                     <p key="2" className="text-right edit-button"
                      style={{marginBottom : '0rem', display: 'none'}}>
-                     <a href="" onClick={this.toggleEditState} >Edit</a></p>]
+                     <a href="" onClick={this.toggleEditState} >Edit </a></p>]
                 )
             }
         </div>)

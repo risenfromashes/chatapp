@@ -2,7 +2,7 @@ import { Socket } from "socket.io";
 
 export interface MessageElementProp{
     messageData: MessageData,
-    color: string,
+    editable: boolean,
     onTextChange: (messageID: string, text: string[]) => void
 }
 
@@ -17,8 +17,8 @@ export interface MessageData{
     messageID: string,
     createdAt: number,
     editedAt: number,
-    color: string,
-    text: string[]
+    text: string[],
+    color: string
 }
 
 export interface MessageContainerProp{
@@ -31,10 +31,13 @@ export interface MessageContainerState{
     ip: string | undefined,
     id: string | undefined,
     connected: boolean,
-    attemptingConnection: boolean
+    attemptingConnection: boolean,
+    connectionNo: number,
+    myColor: string
 }
 
 export interface ConnectionState{
     ip: string,
+    connectionNo: number,
     Messages: MessageData[]
 }

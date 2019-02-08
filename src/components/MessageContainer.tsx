@@ -10,6 +10,7 @@ import io from 'socket.io-client'
 import { Socket } from 'socket.io';
 import { textUpdateEventData, textEditEventData } from '../types/EventDataTypes';
 
+import getRandomColor from '../utils/colors'
 
 
 
@@ -35,15 +36,17 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                         editedAt: Message.editedAt,
                         senderIP: Message.senderIP,
                         senderID: Message.senderID,
-                        messageID: Message.messageID
+                        messageID: Message.messageID,
+                        color: Message.color
                     }
                 }) : [],
             id: undefined,
             ip: undefined,
             connected: false,
-            attemptingConnection: true
-        }
-               
+            connectionNo: 0,
+            attemptingConnection: true,
+            myColor: getRandomColor()
+        }       
     }
 
     componentDidMount(){       
@@ -65,7 +68,8 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                         Messages: connectionState.Messages,
                         connected: true,
                         id: this.socket.id,
-                        ip: connectionState.ip
+                        ip: connectionState.ip,
+                        connectionNo: connectionState.connectionNo
                     }
                 )
             }
@@ -104,8 +108,9 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                     text,
                     createdAt: MessageElement.createdAt,
                     editedAt: new Date().getTime(),
-                    senderID: MessageElement.messageID,
-                    senderIP: MessageElement.senderIP
+                    senderID: MessageElement.senderID,
+                    senderIP: MessageElement.senderIP,
+                    color: MessageElement.color
                 }
                 return newMessageData
             }
@@ -134,7 +139,8 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                     senderID: this.state.id,
                     senderIP: this.state.ip,
                     createdAt: new Date().getTime(),
-                    editedAt: 0
+                    editedAt: 0,
+                    color: this.state.myColor
                 }
                 this.haveSentEmptyMessage = true
                 this.mostRecentMessageID = newMessage.messageID
@@ -175,7 +181,7 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                 {this.state.connected ? 
                     ([<div key="1" className="messageContents w-100 mx-auto d-flex flex-column align-items-center">
                         {this.state.Messages.map((Message, index) => {
-                            return <MessageElement key={index} messageData={Message}
+                            return <MessageElement key={index} messageData={Message} editable={(this.state.id==Message.senderID)}
                              onTextChange={this.handleChange}></MessageElement>
                         })}
                     </div>,
