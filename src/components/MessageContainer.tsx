@@ -21,11 +21,14 @@ export default class MessageContainer extends React.Component<MessageContainerPr
     private newText: boolean = false
     private haveSentEmptyMessage: boolean = false
     private mostRecentMessageID: string | undefined
+    private isFocused: boolean = false
 
     constructor(props: MessageContainerProp){
         super(props)        
         this.handleAddButtonClick = this.handleAddButtonClick.bind(this)
         this.handleChange = this.handleChange.bind(this)
+        this.handleMessageFocus = this.handleMessageFocus.bind(this)
+        this.handleMessageBlur = this.handleMessageBlur.bind(this)
         this.socket = this.props.Socket
         this.state = {
             Messages: 
@@ -45,7 +48,7 @@ export default class MessageContainer extends React.Component<MessageContainerPr
             connected: false,
             connectionNo: 0,
             attemptingConnection: true,
-            myColor: getRandomColor()
+            myColor: getRandomColor(0)
         }       
     }
 
@@ -69,7 +72,8 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                         connected: true,
                         id: this.socket.id,
                         ip: connectionState.ip,
-                        connectionNo: connectionState.connectionNo
+                        connectionNo: connectionState.connectionNo,
+                        myColor: getRandomColor(connectionState.connectionNo)
                     }
                 )
             }
@@ -91,15 +95,29 @@ export default class MessageContainer extends React.Component<MessageContainerPr
         this.socket.on('newMessageEvent', (newMessage: MessageData)=>{
             this.addNew(newMessage)
         })
+
+
+        $(document).on('keypress', (e: any)=>{
+            if((e.which == 110 || e.which == 78)&& !this.isFocused){
+                this.handleAddButtonClick()
+                e.preventDefault()
+            }
+        })
     }
 
     componentDidUpdate(){
         let sortedMessages = this.state.Messages.sort((Message1: MessageData, Message2: MessageData)=> Message1.createdAt - Message2.createdAt)
         if(this.state.Messages != sortedMessages) this.setState({Messages: sortedMessages})
+
+        if(this.newText){
+            let docHeight = $('body').height()
+            if(docHeight) $(document).scrollTop(docHeight + 200)
+            this.newText = false
+        }
     }
 
-    private modifybyID(messageID: string, text : string[]): MessageData|undefined{
-        let newMessageData: MessageData | undefined
+    private modifybyID(messageID: string, text : string[]): MessageData[]{
+        let newMessageData: MessageData
         let prevMessagesState : MessageData[] = this.state.Messages
         let newMessagesState: MessageData[] = prevMessagesState.map((MessageElement)=>{
             if(MessageElement.messageID == messageID){
@@ -118,12 +136,10 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                 return MessageElement
             }
         })
-        if(newMessagesState != prevMessagesState){
-            this.setState({
+        this.setState({
                 Messages : newMessagesState
-            })
-        } 
-        return newMessageData
+        }) 
+        return newMessagesState
     }
 
     private addNew(newMessageData?: MessageData): MessageData | undefined {
@@ -134,7 +150,7 @@ export default class MessageContainer extends React.Component<MessageContainerPr
             } 
             else {
                 newMessage = {
-                    text: [`User from ${this.state.ip} wants to say somehting`],
+                    text: [],
                     messageID: uuidv1(),
                     senderID: this.state.id,
                     senderIP: this.state.ip,
@@ -148,6 +164,7 @@ export default class MessageContainer extends React.Component<MessageContainerPr
             this.setState({
                 Messages: this.state.Messages.concat(newMessage)
             })
+            this.newText = true   
             return newMessage 
         }
         return undefined        
@@ -155,37 +172,44 @@ export default class MessageContainer extends React.Component<MessageContainerPr
 
     handleAddButtonClick(){
         let newMessageData = this.addNew()
-        if(newMessageData) this.socket.emit('newMessageEvent', newMessageData)
-        this.newText = true         
+        if(newMessageData) this.socket.emit('newMessageEvent', newMessageData)      
     }
 
     handleChange(messageID: string, newText: string[]){
         if(this.state.id && this.state.ip && this.state.connected){
-            this.modifybyID(messageID, newText)
             let eventData: textEditEventData = {
                 clientID: this.state.id,
                 clientIP: this.state.ip,
                 messageID,
-                currentMessageArray: this.state.Messages,
+                currentMessageArray: this.modifybyID(messageID, newText),
                 newText
             }
-            if(messageID == this.mostRecentMessageID) this.haveSentEmptyMessage = false
+            if((messageID == this.mostRecentMessageID) && newText.length > 0) this.haveSentEmptyMessage = false
             this.socket.emit('textEditEvent', eventData)
         }      
+    }
+
+    handleMessageFocus(){
+        this.isFocused = true
+    }
+
+    handleMessageBlur(){
+        this.isFocused = false
     }
 
     render(): ReactNode {
         const fontStyle: CSSProperties = { fontSize: '2rem', height: '4rem' }
         return (
-            <div id="Texts" className="d-flex flex-column align-items-center w-100 py-4">
+            <div id="Texts" className="d-flex flex-column align-items-center w-100 py-4 px-3">
                 {this.state.connected ? 
-                    ([<div key="1" className="messageContents w-100 mx-auto d-flex flex-column align-items-center">
+                    ([<div key="1" className="messageContents w-100 mx-auto d-flex flex-column align-items-center mb-5">
                         {this.state.Messages.map((Message, index) => {
                             return <MessageElement key={index} messageData={Message} editable={(this.state.id==Message.senderID)}
-                             onTextChange={this.handleChange}></MessageElement>
+                                onFocus={this.handleMessageFocus} onBlur={this.handleMessageBlur}
+                                onTextChange={this.handleChange}></MessageElement>
                         })}
                     </div>,
-                    <button key="2" type="button" onClick={this.handleAddButtonClick} className="btn btn-success rounded-2 w-25 mt-2 py-auto" style={fontStyle}>+</button>])
+                    <button key="2" type="button" onClick={this.handleAddButtonClick} className="btn btn-success rounded-2 w-25 mx-auto mb-2 py-2 fixed-bottom" style={fontStyle}>+</button>])
                     : (this.state.attemptingConnection ? (
                         <div className="alert alert-warning" role="alert">
                             <strong>Trying to connect to server</strong>

@@ -3,6 +3,8 @@ import { Socket } from "socket.io";
 export interface MessageElementProp{
     messageData: MessageData,
     editable: boolean,
+    onFocus: ()=>void,
+    onBlur: ()=> void,
     onTextChange: (messageID: string, text: string[]) => void
 }
 

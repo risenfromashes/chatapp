@@ -9,10 +9,10 @@ const TextParagraphs = (props : TextParagraphsProps)=>(
             {(props.texts && props.texts.length>0)?
             (props.texts.map((text: string, index)=>{
                 return (
-                    <p key={index} className="text-left text-justify" style ={{wordBreak: 'break-word'}}>{text}</p>
+                    <p key={index} className="text-justify" style ={{wordBreak: 'break-word'}}>{text}</p>
                 )
             })):
-            (<p key="1" className="text-left text-justify" style ={{wordBreak: 'break-word'}}>''</p>)}
+            (<p key="1" className="text-justify" style ={{wordBreak: 'break-word'}}>''</p>)}
         </div>
 )
 
