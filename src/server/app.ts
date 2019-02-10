@@ -5,8 +5,10 @@ import {MessageData, MessageContainerState, ConnectionState} from '../types/Mess
 import {textEditEventData, textUpdateEventData} from '../types/EventDataTypes'
 import { stat } from 'fs';
 
+import rendertostring from './ssr'
+
 const app = express()
-const server = app.listen(80, () => {
+const server = app.listen(process.env.PORT || 80, () => {
     console.log('Connected to port 80')
 })
 
@@ -65,5 +67,13 @@ io.on('connection', (socket: Socket) =>{
 app.use(express.static(path.join(__dirname,'../public/')))
 
 app.get('/',(request: Request, response: Response):void=>{
-    response.status(200).sendFile(path.join(__dirname,'../public/html/index.html'))
+    rendertostring(messageData).then((renderedHTML: string)=>{
+        response.status(200).send(renderedHTML)
+    }).catch(err=>{
+        console.log(err)
+    })
+})
+
+app.get('/getMessages',(request: Request, response: Response)=>{
+    response.json(messageData)
 })

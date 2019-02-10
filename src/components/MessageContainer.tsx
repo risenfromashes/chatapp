@@ -16,12 +16,16 @@ import getRandomColor from '../utils/colors'
 
 export default class MessageContainer extends React.Component<MessageContainerProp, MessageContainerState>{
     
-    private socket: SocketIOClient.Socket
+    private socket: SocketIOClient.Socket | undefined
 
-    private newText: boolean = false
+    private myNewText: boolean = false
     private haveSentEmptyMessage: boolean = false
     private mostRecentMessageID: string | undefined
-    private isFocused: boolean = false
+
+    private showRealTime: boolean = true
+    private buttonPressCount: number = 0
+    private buttonTimer: any
+    
 
     constructor(props: MessageContainerProp){
         super(props)        
@@ -29,7 +33,7 @@ export default class MessageContainer extends React.Component<MessageContainerPr
         this.handleChange = this.handleChange.bind(this)
         this.handleMessageFocus = this.handleMessageFocus.bind(this)
         this.handleMessageBlur = this.handleMessageBlur.bind(this)
-        this.socket = this.props.Socket
+        this.socket = this.props.Socket || undefined
         this.state = {
             Messages: 
                 (this.props.Messages && this.props.Messages.length > 0) ? this.props.Messages.map((Message) => {
@@ -40,7 +44,8 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                         senderIP: Message.senderIP,
                         senderID: Message.senderID,
                         messageID: Message.messageID,
-                        color: Message.color
+                        color: Message.color,
+                        showRealTime: Message.showRealTime
                     }
                 }) : [],
             id: undefined,
@@ -48,71 +53,75 @@ export default class MessageContainer extends React.Component<MessageContainerPr
             connected: false,
             connectionNo: 0,
             attemptingConnection: true,
-            myColor: getRandomColor(0)
+            myColor: getRandomColor(0),
+            isFocused: false,
+            newText: false
         }       
     }
 
     componentDidMount(){       
 
-        this.socket.on('reconnecting', (attemptNumber: number) => {
-            this.setState({connected: false, attemptingConnection: true})
-          });
-        this.socket.on('reconnect_error', (error: any) => {
-            this.setState({connected: false, attemptingConnection: false})
-        })
-        this.socket.on('reconnect_failed', () => {
-            this.setState({connected: false, attemptingConnection: false})
-        });
-
-        this.socket.on('connect', () => { }).on('connection', (connectionState: ConnectionState) => {
-            if(connectionState.Messages) {
-                this.setState(
-                    {   
-                        Messages: connectionState.Messages,
-                        connected: true,
-                        id: this.socket.id,
-                        ip: connectionState.ip,
-                        connectionNo: connectionState.connectionNo,
-                        myColor: getRandomColor(connectionState.connectionNo)
-                    }
-                )
-            }
-            else {
-                this.setState(
-                    {   
-                        connected: true,
-                        id: this.socket.id,
-                        ip: connectionState.ip
-                    }
-                )
-            }
-        })
+        if(this.socket) {
+            this.socket.on('reconnecting', (attemptNumber: number) => {
+                this.setState({connected: false, attemptingConnection: true})
+              });
+            this.socket.on('reconnect_error', (error: any) => {
+                this.setState({connected: false, attemptingConnection: false})
+            })
+            this.socket.on('reconnect_failed', () => {
+                this.setState({connected: false, attemptingConnection: false})
+            });
     
-        this.socket.on('textUpdateEvent', (updateEventData: textUpdateEventData)=>{
-            this.modifybyID(updateEventData.messageID,updateEventData.newText)
-        })
-
-        this.socket.on('newMessageEvent', (newMessage: MessageData)=>{
-            this.addNew(newMessage)
-        })
-
-
-        $(document).on('keypress', (e: any)=>{
-            if((e.which == 110 || e.which == 78)&& !this.isFocused){
-                this.handleAddButtonClick()
-                e.preventDefault()
-            }
-        })
+            this.socket.on('connect', () => { }).on('connection', (connectionState: ConnectionState) => {
+                if(connectionState.Messages) {
+                    this.setState(
+                        {   
+                            Messages: connectionState.Messages,
+                            connected: true,
+                            id: (this.socket)? this.socket.id : undefined,
+                            ip: connectionState.ip,
+                            connectionNo: connectionState.connectionNo,
+                            myColor: getRandomColor(connectionState.connectionNo)
+                        }
+                    )
+                }
+                else {
+                    this.setState(
+                        {   
+                            connected: true,
+                            id: (this.socket)? this.socket.id : undefined,
+                            ip: connectionState.ip
+                        }
+                    )
+                }
+            })
+        
+            this.socket.on('textUpdateEvent', (updateEventData: textUpdateEventData)=>{
+                this.modifybyID(updateEventData.messageID,updateEventData.newText)
+            })
+    
+            this.socket.on('newMessageEvent', (newMessage: MessageData)=>{
+                this.addNew(newMessage)
+            })
+    
+    
+            $(document).on('keypress', (e: any)=>{
+                if((e.which == 32)&& !this.state.isFocused){
+                    this.handleAddButtonClick()
+                    e.preventDefault()
+                }
+            })
+        }
     }
 
     componentDidUpdate(){
         let sortedMessages = this.state.Messages.sort((Message1: MessageData, Message2: MessageData)=> Message1.createdAt - Message2.createdAt)
         if(this.state.Messages != sortedMessages) this.setState({Messages: sortedMessages})
 
-        if(this.newText){
+        if(this.myNewText){
             let docHeight = $('body').height()
             if(docHeight) $(document).scrollTop(docHeight + 200)
-            this.newText = false
+            this.myNewText = false
         }
     }
 
@@ -128,7 +137,8 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                     editedAt: new Date().getTime(),
                     senderID: MessageElement.senderID,
                     senderIP: MessageElement.senderIP,
-                    color: MessageElement.color
+                    color: MessageElement.color,
+                    showRealTime: MessageElement.showRealTime
                 }
                 return newMessageData
             }
@@ -156,7 +166,8 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                     senderIP: this.state.ip,
                     createdAt: new Date().getTime(),
                     editedAt: 0,
-                    color: this.state.myColor
+                    color: this.state.myColor,
+                    showRealTime: this.showRealTime
                 }
                 this.haveSentEmptyMessage = true
                 this.mostRecentMessageID = newMessage.messageID
@@ -164,19 +175,47 @@ export default class MessageContainer extends React.Component<MessageContainerPr
             this.setState({
                 Messages: this.state.Messages.concat(newMessage)
             })
-            this.newText = true   
+
+            if(newMessage.senderID == this.state.id) this.myNewText = true
+
+            let docHeight = $(document).innerHeight()
+            if(window && docHeight){
+                console.log(window.pageYOffset, docHeight, window.innerHeight)
+                if(!this.myNewText && (window.pageYOffset < ((docHeight-window.innerHeight)-200))){
+                    this.setState({newText: true})
+        
+                    setTimeout(()=>{
+                        this.setState({newText: false})
+                    },2000) 
+                }
+            } 
+
             return newMessage 
         }
         return undefined        
     }
 
     handleAddButtonClick(){
-        let newMessageData = this.addNew()
-        if(newMessageData) this.socket.emit('newMessageEvent', newMessageData)      
+        this.buttonPressCount++
+        if(this.buttonPressCount == 1){
+            this.buttonTimer = setTimeout(()=>{
+                this.showRealTime = true
+                this.buttonPressCount = 0
+                let newMessageData = this.addNew()
+                if(newMessageData && this.socket) this.socket.emit('newMessageEvent', newMessageData) 
+            },200)
+        }
+        else{
+            clearTimeout(this.buttonTimer)
+            this.showRealTime = false
+            this.buttonPressCount = 0
+            let newMessageData = this.addNew()
+            if(newMessageData && this.socket) this.socket.emit('newMessageEvent', newMessageData)
+        }     
     }
 
     handleChange(messageID: string, newText: string[]){
-        if(this.state.id && this.state.ip && this.state.connected){
+        if(this.state.id && this.state.ip && this.state.connected && this.socket){
             let eventData: textEditEventData = {
                 clientID: this.state.id,
                 clientIP: this.state.ip,
@@ -190,39 +229,44 @@ export default class MessageContainer extends React.Component<MessageContainerPr
     }
 
     handleMessageFocus(){
-        this.isFocused = true
+        this.setState({isFocused: true})
     }
 
     handleMessageBlur(){
-        this.isFocused = false
+        this.setState({isFocused: false})
     }
 
     render(): ReactNode {
         const fontStyle: CSSProperties = { fontSize: '2rem', height: '4rem' }
         return (
             <div id="Texts" className="d-flex flex-column align-items-center w-100 py-4 px-3">
-                {this.state.connected ? 
-                    ([<div key="1" className="messageContents w-100 mx-auto d-flex flex-column align-items-center mb-5">
+                    {this.state.connected || (this.state.attemptingConnection ? (
+                            <div className="alert alert-warning fixed-top text-center" role="alert">
+                                <strong>Trying to connect to server</strong>
+                            </div>
+                        )
+                        :
+                        (
+                            <div className="alert alert-danger fixed-top text-center" role="alert">
+                            <strong>Cannot connect to server</strong>
+                            </div>
+                        )                        
+                    )}
+                    {this.state.newText && 
+                        <div className="alert alert-info fixed-top text-center" role="alert">
+                            <strong>New Messages. Scroll down to see them.</strong>
+                        </div>
+                    }
+                    <div key="1" className="messageContents w-100 mx-auto d-flex flex-column align-items-center mb-5">
                         {this.state.Messages.map((Message, index) => {
                             return <MessageElement key={index} messageData={Message} editable={(this.state.id==Message.senderID)}
                                 onFocus={this.handleMessageFocus} onBlur={this.handleMessageBlur}
                                 onTextChange={this.handleChange}></MessageElement>
                         })}
-                    </div>,
-                    <button key="2" type="button" onClick={this.handleAddButtonClick} className="btn btn-success rounded-2 w-25 mx-auto mb-2 py-2 fixed-bottom" style={fontStyle}>+</button>])
-                    : (this.state.attemptingConnection ? (
-                        <div className="alert alert-warning" role="alert">
-                            <strong>Trying to connect to server</strong>
-                        </div>
-                        )
-                        :
-                        (
-                            <div className="alert alert-danger" role="alert">
-                            <strong>Cannot connect to server</strong>
-                            </div>
-                        )                        
-                    )
-                }
+                    </div>
+                    {this.state.isFocused || !this.state.connected || <button key="2" type="button" onClick={this.handleAddButtonClick} 
+                    className="btn btn-success rounded-circle mx-auto mb-2 fixed-bottom d-flex justify-content-center align-content-center py-0" 
+                    style={{fontSize: '3rem', height: '5rem', width: '5rem'}}><b>&#xff0b;</b></button>}
             </div>
         )
     } 

@@ -10,8 +10,8 @@ import color from 'color'
 export default class MessageElement extends React.Component<MessageElementProp, MessageElementState>{
     
     private canFinishEdit = false
-    private height: number = window.innerHeight/5
-    private width: number = window.innerWidth/2
+    private height: number | string = '"0.2vh"'
+    private width: number | string = '"0.5vw"'
 
     private defaultText: string
 
@@ -27,7 +27,6 @@ export default class MessageElement extends React.Component<MessageElementProp, 
         this.handleFocus = this.handleFocus.bind(this)
         this.handleBlur = this.handleBlur.bind(this)
         this.autoGrow = this.autoGrow.bind(this)
-        console.log(this.props.messageData.editedAt)
         this.defaultText = `User from ${this.props.messageData.senderIP} wants to say somehting`
         if(this.props.messageData.text && this.props.messageData.text.length > 0) 
             this.state = { text: this.props.messageData.text.join('\n'), toggleEdit: false}
@@ -51,7 +50,8 @@ export default class MessageElement extends React.Component<MessageElementProp, 
         let val = $(e.target).val()      
         if(val) {
             val = val.toString()
-            this.props.onTextChange(this.props.messageData.messageID, val.split('\n'))
+            
+            if(this.props.messageData.showRealTime) this.props.onTextChange(this.props.messageData.messageID, val.split('\n'))
 
             this.setState({text: val})                 
 
@@ -128,30 +128,31 @@ export default class MessageElement extends React.Component<MessageElementProp, 
             <div onMouseEnter={this.handleMouseEnter} onMouseLeave={this.handleMouseLeave} onClick={this.showEdit}
                 className="border border-dark rounded my-2 px-3 py-2 text-white w-auto text-justify messageBox"
                 style={{ backgroundColor: this.props.messageData.color, maxWidth: '75%', marginLeft: (this.props.editable) ? 'auto' : '', marginRight: (this.props.editable) ? '' : 'auto', 
-                        fontFamily: "'Josefin Sans', sans-serif", fontSize: '1rem'}}>
+                        fontFamily: "'Josefin Sans', sans-serif", fontSize: '0.8rem'}}>
                 
                 {(toggleEdit && this.props.editable) ? (
                     [
                         <textarea key="1" onChange={this.handleChange} placeholder="Say Something, its free :)" autoFocus={true} onFocus={this.handleFocus} onBlur={this.handleBlur}
-                            style={{ height: this.height, width: this.width, minWidth: '20vw', overflowY: 'hidden', backgroundColor: color(this.props.messageData.color).darken(0.5).hex().toString() }}
+                            style={{ fontSize: '0.8rem', height: this.height, width: this.width, minWidth: '20vw', overflowY: 'hidden', backgroundColor: color(this.props.messageData.color).darken(0.5).hex().toString() }}
                             onKeyUp={this.autoGrow} onPaste={this.autoGrow} onSubmit={this.hideEdit} onKeyPress={this.handleSubmit}
                             className="form-control text-white text-justify messageInput" value={this.state.text}></textarea>,
                         <p key="2" className="text-right" style={{ marginBottom: '0rem' }}><a href="" onClick={this.toggleEditState}>Finish Edit</a></p>
                     ]
                 ) : (
                         [
-                            <div style={{color: color(this.props.messageData.color).darken(0.5).hex().toString(), fontSize: '0.75rem', height: '0.8rem'}}
+                            <div key="1" style={{color: color(this.props.messageData.color).darken(0.5).hex().toString(), fontSize: '0.75rem', height: '0.8rem'}}
                                 className="d-flex flex-row">
                                 <p className="text-left w-auto mr-auto">From: <b className="text-primary">{this.props.messageData.senderIP}</b></p>
                                 <p className="text-right w-auto ml-auto">At: <b className="text-info">{new Date(this.props.messageData.createdAt).toLocaleTimeString()}</b></p>
                             </div>,
-                            <hr></hr>,
-                            <TextParagraphs key="1" texts={
+                            <hr key="2"></hr>,
+                            <TextParagraphs key="3" texts={
                                 (this.props.messageData.text && this.props.messageData.text.length > 0) ? this.props.messageData.text : [this.defaultText]
                             } />,
-                            <p key="2" className="text-right edit-button"
+                            <p key="4" className="text-right edit-button"
                                 style={{ marginBottom: '0rem', display: 'none' }}>
-                            <a href="" onClick={this.toggleEditState} >Edit </a></p>
+                                <a href="" onClick={this.toggleEditState} >Edit</a>
+                            </p>
                         ]
                     )
                 }

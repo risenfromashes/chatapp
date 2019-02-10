@@ -8,12 +8,18 @@ import io from 'socket.io-client'
 
 const socket: SocketIOClient.Socket = io(window.location.origin)
 
+let messageData: any
 
-ReactDOM.render(
-    <MessageContainer Socket={socket} Messages= {[]}/>,
-    document.getElementById('root')
-)
+$.getJSON('/getMessages',(data: any)=>{
+    messageData = data
+    console.log(messageData)
+    ReactDOM.hydrate(
+        <MessageContainer Socket={socket} Messages= {messageData}/>,
+        document.getElementById('root')
+    )
+})
 
 $(document).ready(()=>{
+   
 })
 

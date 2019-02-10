@@ -20,11 +20,12 @@ export interface MessageData{
     createdAt: number,
     editedAt: number,
     text: string[],
-    color: string
+    color: string,
+    showRealTime: boolean
 }
 
 export interface MessageContainerProp{
-    Socket: SocketIOClient.Socket,
+    Socket?: SocketIOClient.Socket | undefined,
     Messages: MessageData[]   
 }
 
@@ -35,7 +36,9 @@ export interface MessageContainerState{
     connected: boolean,
     attemptingConnection: boolean,
     connectionNo: number,
-    myColor: string
+    myColor: string,
+    isFocused: boolean,
+    newText: boolean
 }
 
 export interface ConnectionState{

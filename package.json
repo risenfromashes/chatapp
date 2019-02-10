@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node dist/server/app.js",
-    "serve-watch": "nodemon --exec \"npm start\"",
-    "build": "tsc -p tsconfig.server.json && webpack",
-    "build-watch": "concurrently \"npm run ts-watch\" \"npm run webpack-watch\"",
+    "serve-watch": "nodemon --exec \"npm start && node copyStaticAssets\"",
+    "build": "tsc -p tsconfig.server.json && webpack && node copyStaticAssets",
+    "build-watch": "concurrently \"npm run ts-watch\" \"npm run webpack-watch\" && node copyStaticAssets",
     "ts-watch": "tsc -p tsconfig.server.json -w",
     "webpack-watch": "webpack -w",
     "test": "echo \"Error: no test specified\" && exit 1"
