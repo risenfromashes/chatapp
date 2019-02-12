@@ -1,4 +1,25 @@
 import { Socket } from "socket.io";
+import { ChangeEvent, KeyboardEvent, ClipboardEvent, FormEvent, FocusEvent, MouseEvent } from "react";
+
+export interface MessageHeaderProp{
+    color: string,
+    sender: string,
+    time: string
+}
+
+export interface MessageEditorProp{
+    height: string | number,
+    width: string | number,
+    bgcolor: string,
+    text: string,
+    onFocus: (event: FocusEvent) => void,
+    onBlur: (event: FocusEvent) => void,
+    onChange: (event: ChangeEvent | KeyboardEvent) => void,
+    onTextChange: (event: KeyboardEvent | ClipboardEvent) => void,
+    onKeyPress: (event: KeyboardEvent) => void,
+    onSubmit: (event: FormEvent) => void,
+    onFinishEditClick: (event: MouseEvent) => void
+}
 
 export interface MessageElementProp{
     messageData: MessageData,

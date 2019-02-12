@@ -5,11 +5,12 @@
   "main": "index.js",
   "scripts": {
     "start": "node dist/server/app.js",
-    "serve-watch": "nodemon --exec \"npm start && node copyStaticAssets\"",
-    "build": "tsc -p tsconfig.server.json && webpack && node copyStaticAssets",
-    "build-watch": "concurrently \"npm run ts-watch\" \"npm run webpack-watch\" && node copyStaticAssets",
+    "serve": "node copyStaticAssets.js && node dist/server/app.js",
+    "serve-watch": "nodemon --exec \"npm run serve\"",
+    "build": "tsc -p tsconfig.server.json && webpack --config webpack.prod.js && node copyStaticAssets.js",
+    "build-watch": "concurrently \"npm run ts-watch\" \"npm run webpack-watch\"",
     "ts-watch": "tsc -p tsconfig.server.json -w",
-    "webpack-watch": "webpack -w",
+    "webpack-watch": "webpack --config webpack.dev.js -w",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -22,7 +23,7 @@
     "@types/socket.io": "^2.1.2",
     "@types/socket.io-client": "^1.4.32",
     "concurrently": "^4.1.0",
-    "nodemon": "^1.18.9",
+    "nodemon": "^1.18.10",
     "pkg-dir": "^3.0.0",
     "shelljs": "^0.8.3",
     "ts-loader": "^5.3.3",
@@ -41,6 +42,7 @@
     "react-dom": "^16.7.0",
     "socket.io": "^2.2.0",
     "socket.io-client": "^2.2.0",
+    "terser": "^3.16.1",
     "uuid": "^3.3.2"
   }
 }

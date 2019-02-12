@@ -5,7 +5,10 @@ import $ from 'jquery'
 
 import TextParagraphs from '../components/TextParagraphs'
 import {MessageElementProp, MessageElementState} from '../types/MessageTypes'
+
 import color from 'color'
+import MessageHeader from './MessageHeader';
+import MessageEditor from './MessageEditor';
 
 export default class MessageElement extends React.Component<MessageElementProp, MessageElementState>{
     
@@ -124,28 +127,25 @@ export default class MessageElement extends React.Component<MessageElementProp, 
 
     render() {
         let toggleEdit = this.state.toggleEdit
+        let darkColor = color(this.props.messageData.color).darken(0.5).hex().toString()
+        let timeString = new Date(this.props.messageData.createdAt).toLocaleTimeString()
         return (
             <div onMouseEnter={this.handleMouseEnter} onMouseLeave={this.handleMouseLeave} onClick={this.showEdit}
                 className="border border-dark rounded my-2 px-3 py-2 text-white w-auto text-justify messageBox"
                 style={{ backgroundColor: this.props.messageData.color, maxWidth: '75%', marginLeft: (this.props.editable) ? 'auto' : '', marginRight: (this.props.editable) ? '' : 'auto', 
                         fontFamily: "'Josefin Sans', sans-serif", fontSize: '0.8rem'}}>
                 
-                {(toggleEdit && this.props.editable) ? (
-                    [
-                        <textarea key="1" onChange={this.handleChange} placeholder="Say Something, its free :)" autoFocus={true} onFocus={this.handleFocus} onBlur={this.handleBlur}
-                            style={{ fontSize: '0.8rem', height: this.height, width: this.width, minWidth: '20vw', overflowY: 'hidden', backgroundColor: color(this.props.messageData.color).darken(0.5).hex().toString() }}
-                            onKeyUp={this.autoGrow} onPaste={this.autoGrow} onSubmit={this.hideEdit} onKeyPress={this.handleSubmit}
-                            className="form-control text-white text-justify messageInput" value={this.state.text}></textarea>,
-                        <p key="2" className="text-right" style={{ marginBottom: '0rem' }}><a href="" onClick={this.toggleEditState}>Finish Edit</a></p>
-                    ]
+                {(toggleEdit && this.props.editable) ? (                
+                    <MessageEditor text={this.state.text} height={this.height} width={this.width} bgcolor={darkColor} 
+                        onFinishEditClick={this.toggleEditState} onFocus={this.handleFocus} onBlur={this.handleBlur} onChange={this.handleChange}
+                        onKeyPress={this.handleSubmit} onSubmit={this.hideEdit} onTextChange={this.autoGrow}
+                    ></MessageEditor>
                 ) : (
                         [
-                            <div key="1" style={{color: color(this.props.messageData.color).darken(0.5).hex().toString(), fontSize: '0.75rem', height: '0.8rem'}}
-                                className="d-flex flex-row">
-                                <p className="text-left w-auto mr-auto">From: <b className="text-primary">{this.props.messageData.senderIP}</b></p>
-                                <p className="text-right w-auto ml-auto">At: <b className="text-info">{new Date(this.props.messageData.createdAt).toLocaleTimeString()}</b></p>
-                            </div>,
-                            <hr key="2"></hr>,
+                            <MessageHeader key="1" color={darkColor}
+                            time={timeString} sender={this.props.messageData.senderIP}
+                            ></MessageHeader>,
+                            <hr key="2"/>,
                             <TextParagraphs key="3" texts={
                                 (this.props.messageData.text && this.props.messageData.text.length > 0) ? this.props.messageData.text : [this.defaultText]
                             } />,
@@ -156,7 +156,6 @@ export default class MessageElement extends React.Component<MessageElementProp, 
                         ]
                     )
                 }
-
             </div>
         )
     }

@@ -1,13 +1,10 @@
 
-import React, { FormEvent, ChangeEvent, KeyboardEvent, ClipboardEvent, MouseEvent, ReactNode, CSSProperties } from 'react'
-import ReactDOM from 'react-dom'
+import React, { ReactNode, CSSProperties } from 'react'
 import $ from 'jquery'
 import uuidv1 from 'uuid/v1'
 import MessageElement from '../components/MessageElement'
 import {MessageContainerProp, MessageContainerState, MessageData, ConnectionState} from '../types/MessageTypes'
 
-import io from 'socket.io-client'
-import { Socket } from 'socket.io';
 import { textUpdateEventData, textEditEventData } from '../types/EventDataTypes';
 
 import getRandomColor from '../utils/colors'
