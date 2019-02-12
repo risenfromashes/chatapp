@@ -45,6 +45,10 @@ export interface MessageData{
     showRealTime: boolean
 }
 
+export interface MessageAlertProp{
+    alertType: 'newMessage' | 'cannotConnect' | 'tryingToConnect'
+}
+
 export interface MessageContainerProp{
     Socket?: SocketIOClient.Socket | undefined,
     Messages: MessageData[]   
@@ -60,6 +64,10 @@ export interface MessageContainerState{
     myColor: string,
     isFocused: boolean,
     newText: boolean
+}
+
+export interface AddButtonProp{
+    onClick: (event: MouseEvent)=> void
 }
 
 export interface ConnectionState{

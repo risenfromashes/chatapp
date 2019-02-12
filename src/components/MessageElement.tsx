@@ -37,11 +37,13 @@ export default class MessageElement extends React.Component<MessageElementProp, 
     }
 
     componentDidMount(){
+        //animation when created
         let thisElement = ReactDOM.findDOMNode(this)
         if(thisElement) $(thisElement).hide().fadeIn()
     }
 
     componentDidUpdate(){
+        //saves the width of the div, to set that width to the textarea when edited again
         let thisElement = ReactDOM.findDOMNode(this)
         if(thisElement){
             let messageBoxWidth = $(thisElement).width()
@@ -53,7 +55,7 @@ export default class MessageElement extends React.Component<MessageElementProp, 
         let val = $(e.target).val()      
         if(val) {
             val = val.toString()
-            
+            //doesnt update on every change if showrealtime is false
             if(this.props.messageData.showRealTime) this.props.onTextChange(this.props.messageData.messageID, val.split('\n'))
 
             this.setState({text: val})                 
@@ -98,6 +100,7 @@ export default class MessageElement extends React.Component<MessageElementProp, 
             height = textElement.height(),
             scrollTop = textElement.scrollTop()
 
+        //changes the height of the textarea to its innerheight until maximum height is reached
         if (height && innerHeight && scrollTop) {
             if (height < innerHeight) {
                 if(height < 500) {
@@ -118,6 +121,7 @@ export default class MessageElement extends React.Component<MessageElementProp, 
         }
     }
 
+    //slide updown animation for the edit button/hyperlink
     handleMouseEnter(e: MouseEvent){
         if(this.props.editable && !this.state.toggleEdit) $(e.target).children('.edit-button').slideDown('slow')
     }
@@ -134,7 +138,7 @@ export default class MessageElement extends React.Component<MessageElementProp, 
                 className="border border-dark rounded my-2 px-3 py-2 text-white w-auto text-justify messageBox"
                 style={{ backgroundColor: this.props.messageData.color, maxWidth: '75%', marginLeft: (this.props.editable) ? 'auto' : '', marginRight: (this.props.editable) ? '' : 'auto', 
                         fontFamily: "'Josefin Sans', sans-serif", fontSize: '0.8rem'}}>
-                
+                        
                 {(toggleEdit && this.props.editable) ? (                
                     <MessageEditor text={this.state.text} height={this.height} width={this.width} bgcolor={darkColor} 
                         onFinishEditClick={this.toggleEditState} onFocus={this.handleFocus} onBlur={this.handleBlur} onChange={this.handleChange}

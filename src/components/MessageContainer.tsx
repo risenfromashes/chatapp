@@ -8,6 +8,8 @@ import {MessageContainerProp, MessageContainerState, MessageData, ConnectionStat
 import { textUpdateEventData, textEditEventData } from '../types/EventDataTypes';
 
 import getRandomColor from '../utils/colors'
+import MessageAlert from './MessageAlert';
+import AddButton from './AddButton';
 
 
 
@@ -15,22 +17,27 @@ export default class MessageContainer extends React.Component<MessageContainerPr
     
     private socket: SocketIOClient.Socket | undefined
 
+    //these are for checking if this instance sent message
     private myNewText: boolean = false
     private haveSentEmptyMessage: boolean = false
     private mostRecentMessageID: string | undefined
 
+    //show messages as typed or not
+    //timer and counter to implement oneclick for showrealtime and dblclick for not
     private showRealTime: boolean = true
     private buttonPressCount: number = 0
     private buttonTimer: any
     
 
     constructor(props: MessageContainerProp){
-        super(props)        
+        super(props)
+        //binding handlers        
         this.handleAddButtonClick = this.handleAddButtonClick.bind(this)
         this.handleChange = this.handleChange.bind(this)
         this.handleMessageFocus = this.handleMessageFocus.bind(this)
         this.handleMessageBlur = this.handleMessageBlur.bind(this)
         this.socket = this.props.Socket || undefined
+        //setting state recieved from ajax and passed in by index/app.js
         this.state = {
             Messages: 
                 (this.props.Messages && this.props.Messages.length > 0) ? this.props.Messages.map((Message) => {
@@ -59,6 +66,7 @@ export default class MessageContainer extends React.Component<MessageContainerPr
     componentDidMount(){       
 
         if(this.socket) {
+            //setting state to show proper error message
             this.socket.on('reconnecting', (attemptNumber: number) => {
                 this.setState({connected: false, attemptingConnection: true})
               });
@@ -69,6 +77,7 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                 this.setState({connected: false, attemptingConnection: false})
             });
     
+            //refresh data once really connected
             this.socket.on('connect', () => { }).on('connection', (connectionState: ConnectionState) => {
                 if(connectionState.Messages) {
                     this.setState(
@@ -93,15 +102,16 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                 }
             })
         
+            //if text is changed update the text by id
             this.socket.on('textUpdateEvent', (updateEventData: textUpdateEventData)=>{
                 this.modifybyID(updateEventData.messageID,updateEventData.newText)
             })
-    
+            //if there is new text , gets the data and adds it
             this.socket.on('newMessageEvent', (newMessage: MessageData)=>{
                 this.addNew(newMessage)
             })
     
-    
+            //enables space key as a shortcut for the button click
             $(document).on('keypress', (e: any)=>{
                 if((e.which == 32)&& !this.state.isFocused){
                     this.handleAddButtonClick()
@@ -112,9 +122,11 @@ export default class MessageContainer extends React.Component<MessageContainerPr
     }
 
     componentDidUpdate(){
+        //sort the messages by time
         let sortedMessages = this.state.Messages.sort((Message1: MessageData, Message2: MessageData)=> Message1.createdAt - Message2.createdAt)
         if(this.state.Messages != sortedMessages) this.setState({Messages: sortedMessages})
 
+        //scroll to the bottom of the page if the button or spacebar caused new message from this instance
         if(this.myNewText){
             let docHeight = $('body').height()
             if(docHeight) $(document).scrollTop(docHeight + 200)
@@ -122,6 +134,9 @@ export default class MessageContainer extends React.Component<MessageContainerPr
         }
     }
 
+    //stores the previous messageData array from state, updates the message with the given id and returns the updated array
+    //edit time is updated
+    //and setStates the updated array
     private modifybyID(messageID: string, text : string[]): MessageData[]{
         let newMessageData: MessageData
         let prevMessagesState : MessageData[] = this.state.Messages
@@ -150,6 +165,8 @@ export default class MessageContainer extends React.Component<MessageContainerPr
     }
 
     private addNew(newMessageData?: MessageData): MessageData | undefined {
+        //if this instance is properly connected and the user hvnt sent empty messages, add the new message, giving
+        //this instances id, ip, timestamp, color etc
         if(this.state.id && this.state.ip && this.state.connected && !this.haveSentEmptyMessage){
             let newMessage: MessageData
             if(newMessageData) {
@@ -173,8 +190,10 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                 Messages: this.state.Messages.concat(newMessage)
             })
 
+            //this instance has sent a message
             if(newMessage.senderID == this.state.id) this.myNewText = true
 
+            //shows the newmessage alert only if the user has scrolled above
             let docHeight = $(document).innerHeight()
             if(window && docHeight){
                 console.log(window.pageYOffset, docHeight, window.innerHeight)
@@ -186,13 +205,16 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                     },2000) 
                 }
             } 
-
+            //returns the created messagedata
             return newMessage 
         }
         return undefined        
     }
 
     handleAddButtonClick(){
+        //if there is just 1 button press in the span of 200 ms,
+        //message wont be shown realtime
+        //if the button is pressed again before 200ms, resets buttoncount and sets showrealtime to false
         this.buttonPressCount++
         if(this.buttonPressCount == 1){
             this.buttonTimer = setTimeout(()=>{
@@ -207,11 +229,13 @@ export default class MessageContainer extends React.Component<MessageContainerPr
             this.showRealTime = false
             this.buttonPressCount = 0
             let newMessageData = this.addNew()
+            //emits the event
             if(newMessageData && this.socket) this.socket.emit('newMessageEvent', newMessageData)
         }     
     }
 
     handleChange(messageID: string, newText: string[]){
+        //if properly connected update state and the message array received from modifybyID
         if(this.state.id && this.state.ip && this.state.connected && this.socket){
             let eventData: textEditEventData = {
                 clientID: this.state.id,
@@ -220,7 +244,9 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                 currentMessageArray: this.modifybyID(messageID, newText),
                 newText
             }
+            //check if the message was edited by this instance
             if((messageID == this.mostRecentMessageID) && newText.length > 0) this.haveSentEmptyMessage = false
+            //emits the event
             this.socket.emit('textEditEvent', eventData)
         }      
     }
@@ -237,23 +263,13 @@ export default class MessageContainer extends React.Component<MessageContainerPr
         const fontStyle: CSSProperties = { fontSize: '2rem', height: '4rem' }
         return (
             <div id="Texts" className="d-flex flex-column align-items-center w-100 py-4 px-3">
-                    {this.state.connected || (this.state.attemptingConnection ? (
-                            <div className="alert alert-warning fixed-top text-center" role="alert">
-                                <strong>Trying to connect to server</strong>
-                            </div>
-                        )
+                    {this.state.connected || (this.state.attemptingConnection ?
+                        (   <MessageAlert alertType="tryingToConnect"></MessageAlert>   )
                         :
-                        (
-                            <div className="alert alert-danger fixed-top text-center" role="alert">
-                            <strong>Cannot connect to server</strong>
-                            </div>
-                        )                        
+                        (   <MessageAlert alertType="tryingToConnect"></MessageAlert>   )                        
                     )}
-                    {this.state.newText && 
-                        <div className="alert alert-info fixed-top text-center" role="alert">
-                            <strong>New Messages. Scroll down to see them.</strong>
-                        </div>
-                    }
+                    {this.state.newText && <MessageAlert alertType="newMessage"></MessageAlert>}
+                    
                     <div key="1" className="messageContents w-100 mx-auto d-flex flex-column align-items-center mb-5">
                         {this.state.Messages.map((Message, index) => {
                             return <MessageElement key={index} messageData={Message} editable={(this.state.id==Message.senderID)}
@@ -261,9 +277,7 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                                 onTextChange={this.handleChange}></MessageElement>
                         })}
                     </div>
-                    {this.state.isFocused || !this.state.connected || <button key="2" type="button" onClick={this.handleAddButtonClick} 
-                    className="btn btn-success rounded-circle mx-auto mb-2 fixed-bottom d-flex justify-content-center align-content-center py-0" 
-                    style={{fontSize: '3rem', height: '5rem', width: '5rem'}}><b>&#xff0b;</b></button>}
+                    {this.state.isFocused || !this.state.connected ||<AddButton onClick={this.handleAddButtonClick}></AddButton>}
             </div>
         )
     } 
