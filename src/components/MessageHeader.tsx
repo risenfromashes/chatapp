@@ -4,16 +4,16 @@ import {Icon, Divider} from '@blueprintjs/core'
 
 const MessageHeader = (props: MessageHeaderProp) => {
     return (
-        <div
-            style={{ color: props.color, fontSize: '0.8rem' }}
-            className="d-flex flex-row py-2">
-                <Icon icon="user"/>
-                <span><b>{props.sender}</b></span>
-                <Divider/>
-                <Icon icon="time"/>
-                <span>{props.time}</span>        
-            <hr/> 
-        </div>
+        <div className="d-flex flex-wrap align-content-center mb-3">
+            <Icon icon="user" iconSize={25} tagName="div"/>
+            <div className="mx-2 my-auto">{props.sender}</div>
+            <Divider/>
+            <div 
+                className="mx-2 my-auto"
+                style={{fontFamily:'arial', fontSize: '0.75rem'}}>
+                {props.time}
+            </div>
+        </div>        
     )
 }
 

@@ -100,7 +100,7 @@ export default class MessageElement extends React.Component<MessageElementProp, 
                     backgroundColor: this.props.messageData.color, 
                     maxWidth: '75%', 
                     marginLeft: (this.props.editable) ? 'auto' : '', marginRight: (this.props.editable) ? '' : 'auto',
-                    marginTop: '2rem',
+                    marginTop: '1rem',
                     marginBottom: '0px',                        
                     fontFamily: "'Josefin Sans', sans-serif", fontSize: '0.9rem'}}
                 >
