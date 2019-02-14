@@ -1,4 +1,4 @@
 /node_modules
+/src/public/css/libs/
 /dist
 /.vscode
-/src/public/css/libs
