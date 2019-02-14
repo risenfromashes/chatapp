@@ -8,22 +8,27 @@ export interface MessageHeaderProp{
 }
 
 export interface MessageEditorProp{
-    height: string | number,
     width: string | number,
-    bgcolor: string,
     text: string,
-    onFocus: (event: FocusEvent) => void,
-    onBlur: (event: FocusEvent) => void,
-    onChange: (event: ChangeEvent | KeyboardEvent) => void,
-    onTextChange: (event: KeyboardEvent | ClipboardEvent) => void,
-    onKeyPress: (event: KeyboardEvent) => void,
-    onSubmit: (event: FormEvent) => void,
+    id: string,
+    handlers: {
+        onCancel: (value: string) => void,
+        onChange: (value: string) => void,
+        onConfirm: (value: string) => void,
+        onEdit: (value: string) => void
+    }
     onFinishEditClick: (event: MouseEvent) => void
+}
+
+export interface TextParagraphsProps{
+    isEditable: boolean,
+    texts: string[]
 }
 
 export interface MessageElementProp{
     messageData: MessageData,
     editable: boolean,
+    onSend: (message: MessageData)=>void,
     onFocus: ()=>void,
     onBlur: ()=> void,
     onTextChange: (messageID: string, text: string[]) => void

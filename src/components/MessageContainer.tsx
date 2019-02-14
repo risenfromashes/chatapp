@@ -8,7 +8,7 @@ import {MessageContainerProp, MessageContainerState, MessageData, ConnectionStat
 import { textUpdateEventData, textEditEventData } from '../types/EventDataTypes';
 
 import getRandomColor from '../utils/colors'
-import MessageAlert from './MessageAlert';
+import MessageAlert, { showErrorToast } from './MessageAlert';
 import AddButton from './AddButton';
 
 
@@ -36,6 +36,7 @@ export default class MessageContainer extends React.Component<MessageContainerPr
         this.handleChange = this.handleChange.bind(this)
         this.handleMessageFocus = this.handleMessageFocus.bind(this)
         this.handleMessageBlur = this.handleMessageBlur.bind(this)
+        this.onSend = this.onSend.bind(this)
         this.socket = this.props.Socket || undefined
         //setting state recieved from ajax and passed in by index/app.js
         this.state = {
@@ -126,7 +127,6 @@ export default class MessageContainer extends React.Component<MessageContainerPr
         let sortedMessages = this.state.Messages.sort((Message1: MessageData, Message2: MessageData)=> Message1.createdAt - Message2.createdAt)
         if(this.state.Messages != sortedMessages) this.setState({Messages: sortedMessages})
 
-        //scroll to the bottom of the page if the button or spacebar caused new message from this instance
         if(this.myNewText){
             let docHeight = $('body').height()
             if(docHeight) $(document).scrollTop(docHeight + 200)
@@ -230,8 +230,18 @@ export default class MessageContainer extends React.Component<MessageContainerPr
             this.buttonPressCount = 0
             let newMessageData = this.addNew()
             //emits the event
-            if(newMessageData && this.socket) this.socket.emit('newMessageEvent', newMessageData)
+            //emits the event only if its showrealtime
+            //otherwise it sends the event after its value is set
+            if(newMessageData && this.socket && newMessageData.showRealTime) this.socket.emit('newMessageEvent', newMessageData)
+            if(!this.socket) showErrorToast('Can\'t send message')
         }     
+    }
+
+    //for nonshowrealtime messages
+    //it emits the newMessageEvent after the message has been edited
+    onSend(message: MessageData){
+        if(this.socket && message.editedAt==0) this.socket.emit('newMessageEvent', message)
+        if(!this.socket) showErrorToast('Can\'t send message')
     }
 
     handleChange(messageID: string, newText: string[]){
@@ -248,7 +258,8 @@ export default class MessageContainer extends React.Component<MessageContainerPr
             if((messageID == this.mostRecentMessageID) && newText.length > 0) this.haveSentEmptyMessage = false
             //emits the event
             this.socket.emit('textEditEvent', eventData)
-        }      
+        }
+        else showErrorToast('Can\'t edit message.')      
     }
 
     handleMessageFocus(){
@@ -260,9 +271,8 @@ export default class MessageContainer extends React.Component<MessageContainerPr
     }
 
     render(): ReactNode {
-        const fontStyle: CSSProperties = { fontSize: '2rem', height: '4rem' }
         return (
-            <div id="Texts" className="d-flex flex-column align-items-center w-100 py-4 px-3">
+            <div id="Texts" className="w-100 px-3 messageContainer">
                     {this.state.connected || (this.state.attemptingConnection ?
                         (   <MessageAlert alertType="tryingToConnect"></MessageAlert>   )
                         :
@@ -272,9 +282,17 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                     
                     <div key="1" className="messageContents w-100 mx-auto d-flex flex-column align-items-center mb-5">
                         {this.state.Messages.map((Message, index) => {
-                            return <MessageElement key={index} messageData={Message} editable={(this.state.id==Message.senderID)}
-                                onFocus={this.handleMessageFocus} onBlur={this.handleMessageBlur}
-                                onTextChange={this.handleChange}></MessageElement>
+                            return (
+                                <MessageElement 
+                                    key={index} 
+                                    messageData={Message} 
+                                    editable={(this.state.id==Message.senderID)}
+                                    onSend={this.onSend}
+                                    onFocus={this.handleMessageFocus} 
+                                    onBlur={this.handleMessageBlur}
+                                    onTextChange={this.handleChange}>
+                                </MessageElement>
+                            )
                         })}
                     </div>
                     {this.state.isFocused || !this.state.connected ||<AddButton onClick={this.handleAddButtonClick}></AddButton>}

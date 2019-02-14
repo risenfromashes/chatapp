@@ -32,6 +32,7 @@
     "webpack-cli": "^3.2.3"
   },
   "dependencies": {
+    "@blueprintjs/core": "^3.13.0",
     "@types/color": "^3.0.0",
     "@types/uuid": "^3.4.4",
     "color": "^3.1.0",
