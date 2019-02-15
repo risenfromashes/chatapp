@@ -25,3 +25,9 @@ import { MessageData } from "./MessageTypes";
     messageID: string,
     newText: string[]
  }
+
+ export interface colorChangeEventData{
+    clientID: string,
+    clientIP: string,
+    newColor: string
+ }

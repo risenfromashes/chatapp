@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express'
 import path from 'path'
 import socketIO, { Socket }  from 'socket.io'
 import {MessageData, MessageContainerState, ConnectionState} from '../types/MessageTypes'
-import {textEditEventData, textUpdateEventData} from '../types/EventDataTypes'
+import {textEditEventData, textUpdateEventData, colorChangeEventData} from '../types/EventDataTypes'
 import { stat } from 'fs';
 
 import rendertostring from './ssr'
@@ -50,6 +50,10 @@ io.on('connection', (socket: Socket) =>{
             messageData.push(eventData)
             socket.broadcast.emit('newMessageEvent', eventData)
         }
+    })
+
+    socket.on('colorChangeEvent', (eventData: colorChangeEventData)=>{
+        socket.broadcast.emit('colorChangeEvent', eventData)
     })
 
 })

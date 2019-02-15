@@ -21,11 +21,8 @@ export default class MessageElement extends React.Component<MessageElementProp, 
     constructor(props: MessageElementProp){
         super(props)
         this.handleChange = this.handleChange.bind(this)
-        this.toggleEditState = this.toggleEditState.bind(this)
         this.showEdit = this.showEdit.bind(this)
         this.hideEdit = this.hideEdit.bind(this)
-        this.handleFocus = this.handleFocus.bind(this)
-        this.handleBlur = this.handleBlur.bind(this)
         this.defaultText = `User from ${this.props.messageData.senderIP} wants to say somehting`
         if(this.props.messageData.text && this.props.messageData.text.length > 0) 
             this.state = { text: this.props.messageData.text.join('\n'), toggleEdit: false}
@@ -36,7 +33,10 @@ export default class MessageElement extends React.Component<MessageElementProp, 
         //animation when created
         let thisElement = ReactDOM.findDOMNode(this)
         if(thisElement) $(thisElement).hide().fadeIn()
+        //showedit doesnt call this for the first time
+        if(this.props.messageData.editedAt==0 && this.props.editable) this.props.onFocus()
     }
+
 
     handleChange(val: string){      
         if(val) {
@@ -53,35 +53,24 @@ export default class MessageElement extends React.Component<MessageElementProp, 
             this.setState({text: ''})
         }
     }
-    
-    handleFocus(){
-        this.props.onFocus()       
-    }
-
-    handleBlur(){
-        this.props.onBlur()    
-    }
-
-    toggleEditState(e: KeyboardEvent | MouseEvent | FormEvent){
-        this.showEdit()
-        this.hideEdit()        
-    }
 
     showEdit() {
-        if (!this.state.toggleEdit && (this.props.messageData.editedAt != 0)) {
+        if (this.props.editable && !this.state.toggleEdit && (this.props.messageData.editedAt != 0)) {
             let thisElement = ReactDOM.findDOMNode(this)
             if (thisElement) {
                 let messageBoxWidth = $(thisElement).width()
                 if (messageBoxWidth) this.width = messageBoxWidth
             }
+            if(this.props.editable) this.props.onFocus()
             this.setState({ toggleEdit: true })
         }
     }
 
     hideEdit() {
-        if (this.canFinishEdit && this.state.toggleEdit) {
+        if (this.props.editable && this.canFinishEdit && this.state.toggleEdit) {
             if(!this.props.messageData.showRealTime && (this.props.messageData.editedAt == 0)) this.props.onSend(this.props.messageData)
             this.props.onTextChange(this.props.messageData.messageID, this.state.text.split('\n'))
+            if(this.props.editable) this.props.onBlur()
             this.setState({toggleEdit: false})
         }
     }
@@ -118,9 +107,9 @@ export default class MessageElement extends React.Component<MessageElementProp, 
                         width={this.width} 
                         onFinishEditClick={this.hideEdit} 
                         handlers={{
-                            onCancel: this.handleBlur,
+                            onCancel: this.hideEdit,
                             onChange: this.handleChange,
-                            onEdit: this.handleFocus,
+                            onEdit: this.handleChange,
                             onConfirm: this.hideEdit
                         }}
                     />

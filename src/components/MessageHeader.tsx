@@ -6,11 +6,11 @@ const MessageHeader = (props: MessageHeaderProp) => {
     return (
         <div className="d-flex flex-wrap align-content-center mb-3">
             <Icon icon="user" iconSize={25} tagName="div"/>
-            <div className="mx-2 my-auto">{props.sender}</div>
+            <div className="ml-2 my-auto" style={{fontFamily:'arial', fontSize: '0.75rem'}}>{props.sender}</div>
             <Divider/>
             <div 
-                className="mx-2 my-auto"
-                style={{fontFamily:'arial', fontSize: '0.75rem'}}>
+                className="my-auto"
+                style={{fontFamily:'arial', fontSize: '0.60rem'}}>
                 {props.time}
             </div>
         </div>        

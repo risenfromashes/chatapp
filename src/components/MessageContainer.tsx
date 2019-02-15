@@ -5,11 +5,13 @@ import uuidv1 from 'uuid/v1'
 import MessageElement from '../components/MessageElement'
 import {MessageContainerProp, MessageContainerState, MessageData, ConnectionState} from '../types/MessageTypes'
 
-import { textUpdateEventData, textEditEventData } from '../types/EventDataTypes';
+import { textUpdateEventData, textEditEventData, colorChangeEventData } from '../types/EventDataTypes';
 
 import getRandomColor from '../utils/colors'
 import MessageAlert, { showErrorToast } from './MessageAlert';
 import AddButton from './AddButton';
+import { Navbar, NavbarGroup, Alignment, NavbarHeading, NavbarDivider, Button, Classes } from '@blueprintjs/core';
+import { SettingsDrawer } from './SettingsDrawer';
 
 
 
@@ -36,7 +38,11 @@ export default class MessageContainer extends React.Component<MessageContainerPr
         this.handleChange = this.handleChange.bind(this)
         this.handleMessageFocus = this.handleMessageFocus.bind(this)
         this.handleMessageBlur = this.handleMessageBlur.bind(this)
+        this.openDrawer = this.openDrawer.bind(this)
+        this.closeDrawer = this.closeDrawer.bind(this)
         this.onSend = this.onSend.bind(this)
+        this.changeMyColor = this.changeMyColor.bind(this)
+
         this.socket = this.props.Socket || undefined
         //setting state recieved from ajax and passed in by index/app.js
         this.state = {
@@ -60,7 +66,8 @@ export default class MessageContainer extends React.Component<MessageContainerPr
             attemptingConnection: true,
             myColor: getRandomColor(0),
             isFocused: false,
-            newText: false
+            newText: false,
+            drawerOpen: false
         }       
     }
 
@@ -111,6 +118,12 @@ export default class MessageContainer extends React.Component<MessageContainerPr
             this.socket.on('newMessageEvent', (newMessage: MessageData)=>{
                 this.addNew(newMessage)
             })
+
+            //if someone changes his color
+            this.socket.on('colorChangeEvent', (eventData: colorChangeEventData)=>{
+                let newMessageState = this.changeColorByClientID(eventData.clientID, eventData.newColor)
+                this.setState({Messages: newMessageState})
+            })
     
             //enables space key as a shortcut for the button click
             $(document).on('keypress', (e: any)=>{
@@ -136,20 +149,49 @@ export default class MessageContainer extends React.Component<MessageContainerPr
 
     //stores the previous messageData array from state, updates the message with the given id and returns the updated array
     //edit time is updated
+    //createdTime update is also available for non showrealtime messages
     //and setStates the updated array
-    private modifybyID(messageID: string, text : string[]): MessageData[]{
+    private modifybyID(messageID: string, text ?: string[], time?: number): MessageData[]{
         let newMessageData: MessageData
         let prevMessagesState : MessageData[] = this.state.Messages
         let newMessagesState: MessageData[] = prevMessagesState.map((MessageElement)=>{
             if(MessageElement.messageID == messageID){
                 newMessageData = {
                     messageID,
-                    text,
-                    createdAt: MessageElement.createdAt,
+                    text: text || MessageElement.text,
+                    createdAt: time || MessageElement.createdAt,
                     editedAt: new Date().getTime(),
                     senderID: MessageElement.senderID,
                     senderIP: MessageElement.senderIP,
                     color: MessageElement.color,
+                    showRealTime: MessageElement.showRealTime
+                }
+                return newMessageData
+            }
+            else{
+                return MessageElement
+            }
+        })
+        this.setState({
+                Messages : newMessagesState
+        }) 
+        return newMessagesState
+    }
+
+    //iterates through all the data and changes the color of matched clientid
+    private changeColorByClientID(clientID: string, newColor: string): MessageData[]{
+        let newMessageData: MessageData
+        let prevMessagesState : MessageData[] = this.state.Messages
+        let newMessagesState: MessageData[] = prevMessagesState.map((MessageElement)=>{
+            if(MessageElement.senderID == clientID){
+                newMessageData = {
+                    messageID: MessageElement.messageID,
+                    text: MessageElement.text,
+                    createdAt: MessageElement.createdAt,
+                    editedAt: MessageElement.editedAt,
+                    senderID: MessageElement.senderID,
+                    senderIP: MessageElement.senderIP,
+                    color: newColor,
                     showRealTime: MessageElement.showRealTime
                 }
                 return newMessageData
@@ -237,10 +279,31 @@ export default class MessageContainer extends React.Component<MessageContainerPr
         }     
     }
 
+    //for changing the message color of this user
+    changeMyColor(newColor: string){
+        //strictly checking connection
+        if(this.state.connected && this.state.id && this.state.ip && this.socket){
+            this.changeColorByClientID(this.state.id, newColor)
+
+            let eventData: colorChangeEventData = {
+                clientID: this.state.id,
+                clientIP: this.state.ip,
+                newColor
+            }
+            
+            this.socket.emit('colorChangeEvent', eventData)
+            this.setState({myColor: newColor})
+        }
+    }
+
     //for nonshowrealtime messages
     //it emits the newMessageEvent after the message has been edited
     onSend(message: MessageData){
-        if(this.socket && message.editedAt==0) this.socket.emit('newMessageEvent', message)
+        if(this.socket && message.editedAt==0){
+            message.createdAt = new Date().getTime()
+            this.modifybyID(message.messageID, undefined, message.createdAt)
+            this.socket.emit('newMessageEvent', message)
+        }
         if(!this.socket) showErrorToast('Can\'t send message')
     }
 
@@ -262,6 +325,13 @@ export default class MessageContainer extends React.Component<MessageContainerPr
         else showErrorToast('Can\'t edit message.')      
     }
 
+    openDrawer(){
+        this.setState({drawerOpen: true})
+    }
+    closeDrawer(){        
+        this.setState({drawerOpen: false})
+    }
+
     handleMessageFocus(){
         this.setState({isFocused: true})
     }
@@ -272,7 +342,28 @@ export default class MessageContainer extends React.Component<MessageContainerPr
 
     render(): ReactNode {
         return (
-            <div id="Texts" className="w-100 px-3 messageContainer">
+            <div id="Texts" className="w-100 px-3 messageContainer py-5">
+                    <Navbar fixedToTop={true}>
+                        <NavbarGroup align={Alignment.LEFT}>
+                            <NavbarHeading>RS Chatapp</NavbarHeading>
+                            <NavbarDivider/>
+                            <Button className={`${Classes.MINIMAL} d-none d-md-block`} icon="user" large={true} text={this.state.ip} style={{outline: 'none', width:'200px', overflow: 'hidden'}}/>
+                        </NavbarGroup>
+                        <NavbarGroup align={Alignment.RIGHT}>
+                            <Button className={Classes.MINIMAL} icon="menu" large={true} style={{outline: 'none'}}
+                                    onClick={this.openDrawer}/>
+                        </NavbarGroup>
+                    </Navbar>
+
+                    <SettingsDrawer
+                        handleDrawer = {{
+                            isOpen : this.state.drawerOpen,
+                            onClose : this.closeDrawer
+                        }}
+                        ip = {this.state.ip || 'User'}
+                        onTreeNodeClick = {this.changeMyColor}
+                    />
+
                     {this.state.connected || (this.state.attemptingConnection ?
                         (   <MessageAlert alertType="tryingToConnect"></MessageAlert>   )
                         :
@@ -280,7 +371,7 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                     )}
                     {this.state.newText && <MessageAlert alertType="newMessage"></MessageAlert>}
                     
-                    <div key="1" className="messageContents w-100 mx-auto d-flex flex-column align-items-center mb-5">
+                    <div key="1" className="messageContents w-100 mx-auto d-flex flex-column align-items-center my-3">
                         {this.state.Messages.map((Message, index) => {
                             return (
                                 <MessageElement 

@@ -1,5 +1,6 @@
 import { Socket } from "socket.io";
 import { ChangeEvent, KeyboardEvent, ClipboardEvent, FormEvent, FocusEvent, MouseEvent } from "react";
+import { TreeEventHandler, ITreeNode } from "@blueprintjs/core";
 
 export interface MessageHeaderProp{
     color: string,
@@ -64,11 +65,34 @@ export interface MessageContainerState{
     ip: string | undefined,
     id: string | undefined,
     connected: boolean,
+    drawerOpen: boolean,
     attemptingConnection: boolean,
     connectionNo: number,
     myColor: string,
     isFocused: boolean,
     newText: boolean
+}
+
+export interface SettingsDrawerProp{
+    handleDrawer: {
+        isOpen: boolean,
+        onClose: ()=> void
+    },
+    ip: string,
+    onTreeNodeClick: (newColor: string) => void  
+}
+
+//types related to color settings
+export interface ColorDataType {
+    colorValue: string
+}
+export interface ColorTreeProp{
+    onNodeClick: (newColor: string) => void  
+}
+
+
+export interface ColorTreeState{
+    nodes: ITreeNode<ColorDataType>[]
 }
 
 export interface AddButtonProp{

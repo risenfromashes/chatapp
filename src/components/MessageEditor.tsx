@@ -7,6 +7,7 @@ const MessageEditor = (props: MessageEditorProp) => {
         <div className="d-block" style={{width: props.width, height:"auto"}}>
             <EditableText
                 className="d-block"
+                placeholder="Say something, its free :D"
                 multiline={true}
                 minLines={3}
                 maxLines= {Infinity}
