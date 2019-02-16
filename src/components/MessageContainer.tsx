@@ -1,22 +1,38 @@
-
 import React, { ReactNode, CSSProperties } from 'react'
 import $ from 'jquery'
 import uuidv1 from 'uuid/v1'
 import MessageElement from '../components/MessageElement'
-import {MessageContainerProp, MessageContainerState, MessageData, ConnectionState} from '../types/MessageTypes'
+import {
+    MessageContainerProp,
+    MessageContainerState,
+    MessageData,
+    ConnectionState
+} from '../types/MessageTypes'
 
-import { textUpdateEventData, textEditEventData, colorChangeEventData } from '../types/EventDataTypes';
+import {
+    textUpdateEventData,
+    textEditEventData,
+    colorChangeEventData
+} from '../types/EventDataTypes'
 
 import getRandomColor from '../utils/colors'
-import MessageAlert, { showErrorToast } from './MessageAlert';
-import AddButton from './AddButton';
-import { Navbar, NavbarGroup, Alignment, NavbarHeading, NavbarDivider, Button, Classes } from '@blueprintjs/core';
-import { SettingsDrawer } from './SettingsDrawer';
+import MessageAlert, { showErrorToast } from './MessageAlert'
+import AddButton from './AddButton'
+import {
+    Navbar,
+    NavbarGroup,
+    Alignment,
+    NavbarHeading,
+    NavbarDivider,
+    Button,
+    Classes
+} from '@blueprintjs/core'
+import { SettingsDrawer } from './SettingsDrawer'
 
-
-
-export default class MessageContainer extends React.Component<MessageContainerProp, MessageContainerState>{
-    
+export default class MessageContainer extends React.Component<
+    MessageContainerProp,
+    MessageContainerState
+> {
     private socket: SocketIOClient.Socket | undefined
 
     //these are for checking if this instance sent message
@@ -29,11 +45,10 @@ export default class MessageContainer extends React.Component<MessageContainerPr
     private showRealTime: boolean = true
     private buttonPressCount: number = 0
     private buttonTimer: any
-    
 
-    constructor(props: MessageContainerProp){
+    constructor(props: MessageContainerProp) {
         super(props)
-        //binding handlers        
+        //binding handlers
         this.handleAddButtonClick = this.handleAddButtonClick.bind(this)
         this.handleChange = this.handleChange.bind(this)
         this.handleMessageFocus = this.handleMessageFocus.bind(this)
@@ -46,19 +61,21 @@ export default class MessageContainer extends React.Component<MessageContainerPr
         this.socket = this.props.Socket || undefined
         //setting state recieved from ajax and passed in by index/app.js
         this.state = {
-            Messages: 
-                (this.props.Messages && this.props.Messages.length > 0) ? this.props.Messages.map((Message) => {
-                    return {
-                        text: Message.text,
-                        createdAt: Message.createdAt,
-                        editedAt: Message.editedAt,
-                        senderIP: Message.senderIP,
-                        senderID: Message.senderID,
-                        messageID: Message.messageID,
-                        color: Message.color,
-                        showRealTime: Message.showRealTime
-                    }
-                }) : [],
+            Messages:
+                this.props.Messages && this.props.Messages.length > 0
+                    ? this.props.Messages.map(Message => {
+                          return {
+                              text: Message.text,
+                              createdAt: Message.createdAt,
+                              editedAt: Message.editedAt,
+                              senderIP: Message.senderIP,
+                              senderID: Message.senderID,
+                              messageID: Message.messageID,
+                              color: Message.color,
+                              showRealTime: Message.showRealTime
+                          }
+                      })
+                    : [],
             id: undefined,
             ip: undefined,
             connected: false,
@@ -68,66 +85,76 @@ export default class MessageContainer extends React.Component<MessageContainerPr
             isFocused: false,
             newText: false,
             drawerOpen: false
-        }       
+        }
     }
 
-    componentDidMount(){       
-
-        if(this.socket) {
+    componentDidMount() {
+        if (this.socket) {
             //setting state to show proper error message
             this.socket.on('reconnecting', (attemptNumber: number) => {
-                this.setState({connected: false, attemptingConnection: true})
-              });
+                this.setState({ connected: false, attemptingConnection: true })
+            })
             this.socket.on('reconnect_error', (error: any) => {
-                this.setState({connected: false, attemptingConnection: false})
+                this.setState({ connected: false, attemptingConnection: false })
             })
             this.socket.on('reconnect_failed', () => {
-                this.setState({connected: false, attemptingConnection: false})
-            });
-    
+                this.setState({ connected: false, attemptingConnection: false })
+            })
+
             //refresh data once really connected
-            this.socket.on('connect', () => { }).on('connection', (connectionState: ConnectionState) => {
-                if(connectionState.Messages) {
-                    this.setState(
-                        {   
+            this.socket
+                .on('connect', () => {})
+                .on('connection', (connectionState: ConnectionState) => {
+                    if (connectionState.Messages) {
+                        this.setState({
                             Messages: connectionState.Messages,
                             connected: true,
-                            id: (this.socket)? this.socket.id : undefined,
+                            id: this.socket ? this.socket.id : undefined,
                             ip: connectionState.ip,
                             connectionNo: connectionState.connectionNo,
-                            myColor: getRandomColor(connectionState.connectionNo)
-                        }
-                    )
-                }
-                else {
-                    this.setState(
-                        {   
+                            myColor: getRandomColor(
+                                connectionState.connectionNo
+                            )
+                        })
+                    } else {
+                        this.setState({
                             connected: true,
-                            id: (this.socket)? this.socket.id : undefined,
+                            id: this.socket ? this.socket.id : undefined,
                             ip: connectionState.ip
-                        }
+                        })
+                    }
+                })
+
+            //if text is changed update the text by id
+            this.socket.on(
+                'textUpdateEvent',
+                (updateEventData: textUpdateEventData) => {
+                    this.modifybyID(
+                        updateEventData.messageID,
+                        updateEventData.newText
                     )
                 }
-            })
-        
-            //if text is changed update the text by id
-            this.socket.on('textUpdateEvent', (updateEventData: textUpdateEventData)=>{
-                this.modifybyID(updateEventData.messageID,updateEventData.newText)
-            })
+            )
             //if there is new text , gets the data and adds it
-            this.socket.on('newMessageEvent', (newMessage: MessageData)=>{
+            this.socket.on('newMessageEvent', (newMessage: MessageData) => {
                 this.addNew(newMessage)
             })
 
             //if someone changes his color
-            this.socket.on('colorChangeEvent', (eventData: colorChangeEventData)=>{
-                let newMessageState = this.changeColorByClientID(eventData.clientID, eventData.newColor)
-                this.setState({Messages: newMessageState})
-            })
-    
+            this.socket.on(
+                'colorChangeEvent',
+                (eventData: colorChangeEventData) => {
+                    let newMessageState = this.changeColorByClientID(
+                        eventData.clientID,
+                        eventData.newColor
+                    )
+                    this.setState({ Messages: newMessageState })
+                }
+            )
+
             //enables space key as a shortcut for the button click
-            $(document).on('keypress', (e: any)=>{
-                if((e.which == 32)&& !this.state.isFocused){
+            $(document).on('keypress', (e: any) => {
+                if (e.which == 32 && !this.state.isFocused) {
                     this.handleAddButtonClick()
                     e.preventDefault()
                 }
@@ -135,14 +162,18 @@ export default class MessageContainer extends React.Component<MessageContainerPr
         }
     }
 
-    componentDidUpdate(){
+    componentDidUpdate() {
         //sort the messages by time
-        let sortedMessages = this.state.Messages.sort((Message1: MessageData, Message2: MessageData)=> Message1.createdAt - Message2.createdAt)
-        if(this.state.Messages != sortedMessages) this.setState({Messages: sortedMessages})
+        let sortedMessages = this.state.Messages.sort(
+            (Message1: MessageData, Message2: MessageData) =>
+                Message1.createdAt - Message2.createdAt
+        )
+        if (this.state.Messages != sortedMessages)
+            this.setState({ Messages: sortedMessages })
 
-        if(this.myNewText){
+        if (this.myNewText) {
             let docHeight = $('body').height()
-            if(docHeight) $(document).scrollTop(docHeight + 200)
+            if (docHeight) $(document).scrollTop(docHeight + 200)
             this.myNewText = false
         }
     }
@@ -151,70 +182,83 @@ export default class MessageContainer extends React.Component<MessageContainerPr
     //edit time is updated
     //createdTime update is also available for non showrealtime messages
     //and setStates the updated array
-    private modifybyID(messageID: string, text ?: string[], time?: number): MessageData[]{
+    private modifybyID(
+        messageID: string,
+        text?: string[],
+        time?: number
+    ): MessageData[] {
         let newMessageData: MessageData
-        let prevMessagesState : MessageData[] = this.state.Messages
-        let newMessagesState: MessageData[] = prevMessagesState.map((MessageElement)=>{
-            if(MessageElement.messageID == messageID){
-                newMessageData = {
-                    messageID,
-                    text: text || MessageElement.text,
-                    createdAt: time || MessageElement.createdAt,
-                    editedAt: new Date().getTime(),
-                    senderID: MessageElement.senderID,
-                    senderIP: MessageElement.senderIP,
-                    color: MessageElement.color,
-                    showRealTime: MessageElement.showRealTime
+        let prevMessagesState: MessageData[] = this.state.Messages
+        let newMessagesState: MessageData[] = prevMessagesState.map(
+            MessageElement => {
+                if (MessageElement.messageID == messageID) {
+                    newMessageData = {
+                        messageID,
+                        text: text || MessageElement.text,
+                        createdAt: time || MessageElement.createdAt,
+                        editedAt: new Date().getTime(),
+                        senderID: MessageElement.senderID,
+                        senderIP: MessageElement.senderIP,
+                        color: MessageElement.color,
+                        showRealTime: MessageElement.showRealTime
+                    }
+                    return newMessageData
+                } else {
+                    return MessageElement
                 }
-                return newMessageData
             }
-            else{
-                return MessageElement
-            }
-        })
+        )
         this.setState({
-                Messages : newMessagesState
-        }) 
+            Messages: newMessagesState
+        })
         return newMessagesState
     }
 
     //iterates through all the data and changes the color of matched clientid
-    private changeColorByClientID(clientID: string, newColor: string): MessageData[]{
+    private changeColorByClientID(
+        clientID: string,
+        newColor: string
+    ): MessageData[] {
         let newMessageData: MessageData
-        let prevMessagesState : MessageData[] = this.state.Messages
-        let newMessagesState: MessageData[] = prevMessagesState.map((MessageElement)=>{
-            if(MessageElement.senderID == clientID){
-                newMessageData = {
-                    messageID: MessageElement.messageID,
-                    text: MessageElement.text,
-                    createdAt: MessageElement.createdAt,
-                    editedAt: MessageElement.editedAt,
-                    senderID: MessageElement.senderID,
-                    senderIP: MessageElement.senderIP,
-                    color: newColor,
-                    showRealTime: MessageElement.showRealTime
+        let prevMessagesState: MessageData[] = this.state.Messages
+        let newMessagesState: MessageData[] = prevMessagesState.map(
+            MessageElement => {
+                if (MessageElement.senderID == clientID) {
+                    newMessageData = {
+                        messageID: MessageElement.messageID,
+                        text: MessageElement.text,
+                        createdAt: MessageElement.createdAt,
+                        editedAt: MessageElement.editedAt,
+                        senderID: MessageElement.senderID,
+                        senderIP: MessageElement.senderIP,
+                        color: newColor,
+                        showRealTime: MessageElement.showRealTime
+                    }
+                    return newMessageData
+                } else {
+                    return MessageElement
                 }
-                return newMessageData
             }
-            else{
-                return MessageElement
-            }
-        })
+        )
         this.setState({
-                Messages : newMessagesState
-        }) 
+            Messages: newMessagesState
+        })
         return newMessagesState
     }
 
     private addNew(newMessageData?: MessageData): MessageData | undefined {
         //if this instance is properly connected and the user hvnt sent empty messages, add the new message, giving
         //this instances id, ip, timestamp, color etc
-        if(this.state.id && this.state.ip && this.state.connected && !this.haveSentEmptyMessage){
+        if (
+            this.state.id &&
+            this.state.ip &&
+            this.state.connected &&
+            !this.haveSentEmptyMessage
+        ) {
             let newMessage: MessageData
-            if(newMessageData) {
+            if (newMessageData) {
                 newMessage = newMessageData
-            } 
-            else {
+            } else {
                 newMessage = {
                     text: [],
                     messageID: uuidv1(),
@@ -233,40 +277,43 @@ export default class MessageContainer extends React.Component<MessageContainerPr
             })
 
             //this instance has sent a message
-            if(newMessage.senderID == this.state.id) this.myNewText = true
+            if (newMessage.senderID == this.state.id) this.myNewText = true
 
             //shows the newmessage alert only if the user has scrolled above
             let docHeight = $(document).innerHeight()
-            if(window && docHeight){
+            if (window && docHeight) {
                 console.log(window.pageYOffset, docHeight, window.innerHeight)
-                if(!this.myNewText && (window.pageYOffset < ((docHeight-window.innerHeight)-200))){
-                    this.setState({newText: true})
-        
-                    setTimeout(()=>{
-                        this.setState({newText: false})
-                    },2000) 
+                if (
+                    !this.myNewText &&
+                    window.pageYOffset < docHeight - window.innerHeight - 200
+                ) {
+                    this.setState({ newText: true })
+
+                    setTimeout(() => {
+                        this.setState({ newText: false })
+                    }, 2000)
                 }
-            } 
+            }
             //returns the created messagedata
-            return newMessage 
+            return newMessage
         }
-        return undefined        
+        return undefined
     }
 
-    handleAddButtonClick(){
+    handleAddButtonClick() {
         //if there is just 1 button press in the span of 200 ms,
         //message wont be shown realtime
         //if the button is pressed again before 200ms, resets buttoncount and sets showrealtime to false
         this.buttonPressCount++
-        if(this.buttonPressCount == 1){
-            this.buttonTimer = setTimeout(()=>{
+        if (this.buttonPressCount == 1) {
+            this.buttonTimer = setTimeout(() => {
                 this.showRealTime = true
                 this.buttonPressCount = 0
                 let newMessageData = this.addNew()
-                if(newMessageData && this.socket) this.socket.emit('newMessageEvent', newMessageData) 
-            },200)
-        }
-        else{
+                if (newMessageData && this.socket)
+                    this.socket.emit('newMessageEvent', newMessageData)
+            }, 200)
+        } else {
             clearTimeout(this.buttonTimer)
             this.showRealTime = false
             this.buttonPressCount = 0
@@ -274,42 +321,53 @@ export default class MessageContainer extends React.Component<MessageContainerPr
             //emits the event
             //emits the event only if its showrealtime
             //otherwise it sends the event after its value is set
-            if(newMessageData && this.socket && newMessageData.showRealTime) this.socket.emit('newMessageEvent', newMessageData)
-            if(!this.socket) showErrorToast('Can\'t send message')
-        }     
+            if (newMessageData && this.socket && newMessageData.showRealTime)
+                this.socket.emit('newMessageEvent', newMessageData)
+            if (!this.socket) showErrorToast("Can't send message")
+        }
     }
 
     //for changing the message color of this user
-    changeMyColor(newColor: string){
+    changeMyColor(newColor: string) {
         //strictly checking connection
-        if(this.state.connected && this.state.id && this.state.ip && this.socket){
-            this.changeColorByClientID(this.state.id, newColor)
+        if (
+            this.state.connected &&
+            this.state.id &&
+            this.state.ip &&
+            this.socket
+        ) {           
 
             let eventData: colorChangeEventData = {
                 clientID: this.state.id,
                 clientIP: this.state.ip,
-                newColor
+                newColor,
+                currentMessageArray: this.changeColorByClientID(this.state.id, newColor)
             }
-            
+
             this.socket.emit('colorChangeEvent', eventData)
-            this.setState({myColor: newColor})
+            this.setState({ myColor: newColor })
         }
     }
 
     //for nonshowrealtime messages
     //it emits the newMessageEvent after the message has been edited
-    onSend(message: MessageData){
-        if(this.socket && message.editedAt==0){
+    onSend(message: MessageData) {
+        if (this.socket && message.editedAt == 0) {
             message.createdAt = new Date().getTime()
             this.modifybyID(message.messageID, undefined, message.createdAt)
             this.socket.emit('newMessageEvent', message)
         }
-        if(!this.socket) showErrorToast('Can\'t send message')
+        if (!this.socket) showErrorToast("Can't send message")
     }
 
-    handleChange(messageID: string, newText: string[]){
+    handleChange(messageID: string, newText: string[]) {
         //if properly connected update state and the message array received from modifybyID
-        if(this.state.id && this.state.ip && this.state.connected && this.socket){
+        if (
+            this.state.id &&
+            this.state.ip &&
+            this.state.connected &&
+            this.socket
+        ) {
             let eventData: textEditEventData = {
                 clientID: this.state.id,
                 clientIP: this.state.ip,
@@ -318,76 +376,97 @@ export default class MessageContainer extends React.Component<MessageContainerPr
                 newText
             }
             //check if the message was edited by this instance
-            if((messageID == this.mostRecentMessageID) && newText.length > 0) this.haveSentEmptyMessage = false
+            if (messageID == this.mostRecentMessageID && newText.length > 0)
+                this.haveSentEmptyMessage = false
             //emits the event
             this.socket.emit('textEditEvent', eventData)
-        }
-        else showErrorToast('Can\'t edit message.')      
+        } else showErrorToast("Can't edit message.")
     }
 
-    openDrawer(){
-        this.setState({drawerOpen: true})
+    openDrawer() {
+        this.setState({ drawerOpen: true })
     }
-    closeDrawer(){        
-        this.setState({drawerOpen: false})
-    }
-
-    handleMessageFocus(){
-        this.setState({isFocused: true})
+    closeDrawer() {
+        this.setState({ drawerOpen: false })
     }
 
-    handleMessageBlur(){
-        this.setState({isFocused: false})
+    handleMessageFocus() {
+        this.setState({ isFocused: true })
+    }
+
+    handleMessageBlur() {
+        this.setState({ isFocused: false })
     }
 
     render(): ReactNode {
         return (
-            <div id="Texts" className="w-100 px-3 messageContainer py-5">
-                    <Navbar fixedToTop={true}>
-                        <NavbarGroup align={Alignment.LEFT}>
-                            <NavbarHeading>RS Chatapp</NavbarHeading>
-                            <NavbarDivider/>
-                            <Button className={`${Classes.MINIMAL} d-none d-md-block`} icon="user" large={true} text={this.state.ip} style={{outline: 'none', width:'200px', overflow: 'hidden'}}/>
-                        </NavbarGroup>
-                        <NavbarGroup align={Alignment.RIGHT}>
-                            <Button className={Classes.MINIMAL} icon="menu" large={true} style={{outline: 'none'}}
-                                    onClick={this.openDrawer}/>
-                        </NavbarGroup>
-                    </Navbar>
+            <div id='Texts' className='w-100 px-3 messageContainer py-5'>
+                <Navbar fixedToTop={true}>
+                    <NavbarGroup align={Alignment.LEFT}>
+                        <NavbarHeading>RS Chatapp</NavbarHeading>
+                        <NavbarDivider />
+                        <Button
+                            className={`${Classes.MINIMAL} d-none d-md-block`}
+                            icon='user'
+                            large={true}
+                            text={this.state.ip}
+                            style={{
+                                outline: 'none',
+                                width: '200px',
+                                overflow: 'hidden'
+                            }}
+                        />
+                    </NavbarGroup>
+                    <NavbarGroup align={Alignment.RIGHT}>
+                        <Button
+                            className={Classes.MINIMAL}
+                            icon='menu'
+                            large={true}
+                            style={{ outline: 'none' }}
+                            onClick={this.openDrawer}
+                        />
+                    </NavbarGroup>
+                </Navbar>
 
-                    <SettingsDrawer
-                        handleDrawer = {{
-                            isOpen : this.state.drawerOpen,
-                            onClose : this.closeDrawer
-                        }}
-                        ip = {this.state.ip || 'User'}
-                        onTreeNodeClick = {this.changeMyColor}
-                    />
+                <SettingsDrawer
+                    handleDrawer={{
+                        isOpen: this.state.drawerOpen,
+                        onClose: this.closeDrawer
+                    }}
+                    ip={this.state.ip || 'User'}
+                    onTreeNodeClick={this.changeMyColor}
+                />
 
-                    {this.state.connected || (this.state.attemptingConnection ?
-                        (   <MessageAlert alertType="tryingToConnect"></MessageAlert>   )
-                        :
-                        (   <MessageAlert alertType="tryingToConnect"></MessageAlert>   )                        
-                    )}
-                    {this.state.newText && <MessageAlert alertType="newMessage"></MessageAlert>}
-                    
-                    <div key="1" className="messageContents w-100 mx-auto d-flex flex-column align-items-center my-3">
-                        {this.state.Messages.map((Message, index) => {
-                            return (
-                                <MessageElement 
-                                    key={index} 
-                                    messageData={Message} 
-                                    editable={(this.state.id==Message.senderID)}
-                                    onSend={this.onSend}
-                                    onFocus={this.handleMessageFocus} 
-                                    onBlur={this.handleMessageBlur}
-                                    onTextChange={this.handleChange}>
-                                </MessageElement>
-                            )
-                        })}
-                    </div>
-                    {this.state.isFocused || !this.state.connected ||<AddButton onClick={this.handleAddButtonClick}></AddButton>}
+                {this.state.connected ||
+                    (this.state.attemptingConnection ? (
+                        <MessageAlert alertType='tryingToConnect' />
+                    ) : (
+                        <MessageAlert alertType='tryingToConnect' />
+                    ))}
+                {this.state.newText && <MessageAlert alertType='newMessage' />}
+
+                <div
+                    key='1'
+                    className='messageContents w-100 mx-auto d-flex flex-column align-items-center my-3'
+                >
+                    {this.state.Messages.map((Message, index) => {
+                        return (
+                            <MessageElement
+                                key={index}
+                                messageData={Message}
+                                editable={this.state.id == Message.senderID}
+                                onSend={this.onSend}
+                                onFocus={this.handleMessageFocus}
+                                onBlur={this.handleMessageBlur}
+                                onTextChange={this.handleChange}
+                            />
+                        )
+                    })}
+                </div>
+                {this.state.isFocused || !this.state.connected || (
+                    <AddButton onClick={this.handleAddButtonClick} />
+                )}
             </div>
         )
-    } 
+    }
 }

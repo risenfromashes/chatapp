@@ -53,6 +53,7 @@ io.on('connection', (socket: Socket) =>{
     })
 
     socket.on('colorChangeEvent', (eventData: colorChangeEventData)=>{
+        messageData = eventData.currentMessageArray
         socket.broadcast.emit('colorChangeEvent', eventData)
     })
 

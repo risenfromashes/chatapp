@@ -7,7 +7,7 @@ import {MessageElementProp, MessageElementState} from '../types/MessageTypes'
 
 import color from 'color'
 import MessageHeader from './MessageHeader';
-import MessageEditor from './MessageEditor';
+import {MessageEditor} from './MessageEditor';
 import { Card, Tooltip, Intent } from '@blueprintjs/core';
 import MessageContent from './MessageContent';
 
@@ -16,13 +16,11 @@ export default class MessageElement extends React.Component<MessageElementProp, 
     private canFinishEdit = false
     private width: number | string = '50vw'
 
+    private submitTimer: any
     private defaultText: string
 
     constructor(props: MessageElementProp){
         super(props)
-        this.handleChange = this.handleChange.bind(this)
-        this.showEdit = this.showEdit.bind(this)
-        this.hideEdit = this.hideEdit.bind(this)
         this.defaultText = `User from ${this.props.messageData.senderIP} wants to say somehting`
         if(this.props.messageData.text && this.props.messageData.text.length > 0) 
             this.state = { text: this.props.messageData.text.join('\n'), toggleEdit: false, previewOpen: false}
@@ -38,7 +36,7 @@ export default class MessageElement extends React.Component<MessageElementProp, 
     }
 
 
-    handleChange(val: string){      
+    private handleChange = (val: string)=>{      
         if(val) {
             //doesnt update on every change if showrealtime is false
             if(this.props.messageData.showRealTime) this.props.onTextChange(this.props.messageData.messageID, val.split('\n'))
@@ -54,7 +52,7 @@ export default class MessageElement extends React.Component<MessageElementProp, 
         }
     }
 
-    showEdit() {
+    private showEdit = ()=>{
         if (this.props.editable && !this.state.toggleEdit && (this.props.messageData.editedAt != 0)) {
             let thisElement = ReactDOM.findDOMNode(this)
             if (thisElement) {
@@ -66,21 +64,30 @@ export default class MessageElement extends React.Component<MessageElementProp, 
         }
     }
 
-    hideEdit() {
-        if (this.props.editable && this.canFinishEdit && this.state.toggleEdit) {
-            if(!this.props.messageData.showRealTime && (this.props.messageData.editedAt == 0)) this.props.onSend(this.props.messageData)
-            this.props.onTextChange(this.props.messageData.messageID, this.state.text.split('\n'))
-            if(this.props.editable) this.props.onBlur()
-            this.setState({toggleEdit: false})
-        }
+    private submit = () => {
+        this.submitTimer = setTimeout(() => {
+            if (this.props.editable && this.canFinishEdit && this.state.toggleEdit) {
+                if(!this.props.messageData.showRealTime && (this.props.messageData.editedAt == 0)) this.props.onSend(this.props.messageData)
+                this.props.onTextChange(this.props.messageData.messageID, this.state.text.split('\n'))
+                if(this.props.editable) this.props.onBlur()
+                this.setState({toggleEdit: false})
+            }
+        },200)        
     }
+
+    private handleClickSubmit = (ev: MouseEvent)=>{
+        ev.preventDefault()
+        this.submit()
+    }
+    
+    private cancelSubmit = ()=>{clearTimeout(this.submitTimer)}
 
     private handlePreviewOpen = ()=>{
         this.props.onFocus()
         this.setState({previewOpen: true})
     }
     private handlePreviewClose = ()=>{
-        this.props.onFocus()
+        this.props.onBlur()
         this.setState({previewOpen: false})
     }
 
@@ -114,13 +121,14 @@ export default class MessageElement extends React.Component<MessageElementProp, 
                         id={this.props.messageData.messageID}
                         text={this.state.text}
                         width={this.width} 
-                        onFinishEditClick={this.hideEdit} 
+                        onFinishEditClick={this.handleClickSubmit} 
                         handlers={{
-                            onCancel: this.hideEdit,
+                            onCancel: this.submit,
                             onChange: this.handleChange,
                             onEdit: this.handleChange,
-                            onConfirm: this.hideEdit
+                            onConfirm: this.submit
                         }}
+                        onCancelSubmit={this.cancelSubmit}
                     />
                 ) : (
                         <Tooltip
