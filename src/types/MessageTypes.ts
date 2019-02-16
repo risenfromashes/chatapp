@@ -21,7 +21,9 @@ export interface MessageEditorProp{
     onFinishEditClick: (event: MouseEvent) => void
 }
 
-export interface TextParagraphsProps{
+export interface MessageContentProps{
+    onPreviewOpen: ()=>void,
+    onPreviewClose: ()=>void,
     isEditable: boolean,
     texts: string[]
 }
@@ -37,7 +39,8 @@ export interface MessageElementProp{
 
 export interface MessageElementState{
     text : string,
-    toggleEdit: boolean
+    toggleEdit: boolean,
+    previewOpen: boolean
 }
 
 export interface MessageData{
@@ -104,3 +107,4 @@ export interface ConnectionState{
     connectionNo: number,
     Messages: MessageData[]
 }
+

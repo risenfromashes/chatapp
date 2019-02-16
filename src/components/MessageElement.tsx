@@ -3,13 +3,13 @@ import React, { FormEvent, ChangeEvent, KeyboardEvent, ClipboardEvent, MouseEven
 import ReactDOM from 'react-dom'
 import $ from 'jquery'
 
-import TextParagraphs from '../components/TextParagraphs'
 import {MessageElementProp, MessageElementState} from '../types/MessageTypes'
 
 import color from 'color'
 import MessageHeader from './MessageHeader';
 import MessageEditor from './MessageEditor';
 import { Card, Tooltip, Intent } from '@blueprintjs/core';
+import MessageContent from './MessageContent';
 
 export default class MessageElement extends React.Component<MessageElementProp, MessageElementState>{
     
@@ -25,8 +25,8 @@ export default class MessageElement extends React.Component<MessageElementProp, 
         this.hideEdit = this.hideEdit.bind(this)
         this.defaultText = `User from ${this.props.messageData.senderIP} wants to say somehting`
         if(this.props.messageData.text && this.props.messageData.text.length > 0) 
-            this.state = { text: this.props.messageData.text.join('\n'), toggleEdit: false}
-        else this.state = { text: '', toggleEdit: (this.props.messageData.editedAt==0)?true:false}
+            this.state = { text: this.props.messageData.text.join('\n'), toggleEdit: false, previewOpen: false}
+        else this.state = { text: '', toggleEdit: (this.props.messageData.editedAt==0)?true:false, previewOpen: false}
     }
 
     componentDidMount(){
@@ -75,6 +75,15 @@ export default class MessageElement extends React.Component<MessageElementProp, 
         }
     }
 
+    private handlePreviewOpen = ()=>{
+        this.props.onFocus()
+        this.setState({previewOpen: true})
+    }
+    private handlePreviewClose = ()=>{
+        this.props.onFocus()
+        this.setState({previewOpen: false})
+    }
+
 
     render() {
         let toggleEdit = this.state.toggleEdit
@@ -115,16 +124,20 @@ export default class MessageElement extends React.Component<MessageElementProp, 
                     />
                 ) : (
                         <Tooltip
-                            disabled={!this.props.editable} 
+                            disabled={!(this.props.editable && !this.state.previewOpen)}
+                            lazy={true} 
                             content={<span>Click to <b>Edit</b></span>}
                             intent={Intent.PRIMARY}
                             hoverOpenDelay={1000}
                             hoverCloseDelay={200}
                             position="left"
+                            usePortal={false}
                         >
                             <div>
-                                <TextParagraphs
-                                    isEditable={this.props.editable} 
+                                <MessageContent
+                                    isEditable={this.props.editable}
+                                    onPreviewOpen={this.handlePreviewOpen} 
+                                    onPreviewClose={this.handlePreviewClose} 
                                     texts={
                                         (this.props.messageData.text && this.props.messageData.text.length > 0) ? this.props.messageData.text : [this.defaultText]} 
                                 />

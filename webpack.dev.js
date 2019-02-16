@@ -1,3 +1,4 @@
+const webpack = require('webpack')
 module.exports = {
    mode: "development",
    devtool: "inline-source-map",
@@ -18,5 +19,10 @@ module.exports = {
             loader: "ts-loader"
         }
       ]
-    }
+    },
+    plugins:[      
+      new webpack.DefinePlugin({
+        'process.env.BROWSER': JSON.stringify(true)
+      })
+    ]
   };
