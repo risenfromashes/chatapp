@@ -48,33 +48,23 @@ export default class MessageContainer extends React.Component<
 
     constructor(props: MessageContainerProp) {
         super(props)
-        //binding handlers
-        this.handleAddButtonClick = this.handleAddButtonClick.bind(this)
-        this.handleChange = this.handleChange.bind(this)
-        this.handleMessageFocus = this.handleMessageFocus.bind(this)
-        this.handleMessageBlur = this.handleMessageBlur.bind(this)
-        this.openDrawer = this.openDrawer.bind(this)
-        this.closeDrawer = this.closeDrawer.bind(this)
-        this.onSend = this.onSend.bind(this)
-        this.changeMyColor = this.changeMyColor.bind(this)
-
         this.socket = this.props.Socket || undefined
         //setting state recieved from ajax and passed in by index/app.js
         this.state = {
             Messages:
                 this.props.Messages && this.props.Messages.length > 0
                     ? this.props.Messages.map(Message => {
-                          return {
-                              text: Message.text,
-                              createdAt: Message.createdAt,
-                              editedAt: Message.editedAt,
-                              senderIP: Message.senderIP,
-                              senderID: Message.senderID,
-                              messageID: Message.messageID,
-                              color: Message.color,
-                              showRealTime: Message.showRealTime
-                          }
-                      })
+                        return {
+                            text: Message.text,
+                            createdAt: Message.createdAt,
+                            editedAt: Message.editedAt,
+                            senderIP: Message.senderIP,
+                            senderID: Message.senderID,
+                            messageID: Message.messageID,
+                            color: Message.color,
+                            showRealTime: Message.showRealTime
+                        }
+                    })
                     : [],
             id: undefined,
             ip: undefined,
@@ -182,11 +172,11 @@ export default class MessageContainer extends React.Component<
     //edit time is updated
     //createdTime update is also available for non showrealtime messages
     //and setStates the updated array
-    private modifybyID(
+    private modifybyID = (
         messageID: string,
         text?: string[],
         time?: number
-    ): MessageData[] {
+    ): MessageData[] => {
         let newMessageData: MessageData
         let prevMessagesState: MessageData[] = this.state.Messages
         let newMessagesState: MessageData[] = prevMessagesState.map(
@@ -215,10 +205,10 @@ export default class MessageContainer extends React.Component<
     }
 
     //iterates through all the data and changes the color of matched clientid
-    private changeColorByClientID(
+    private changeColorByClientID = (
         clientID: string,
         newColor: string
-    ): MessageData[] {
+    ): MessageData[] => {
         let newMessageData: MessageData
         let prevMessagesState: MessageData[] = this.state.Messages
         let newMessagesState: MessageData[] = prevMessagesState.map(
@@ -246,7 +236,7 @@ export default class MessageContainer extends React.Component<
         return newMessagesState
     }
 
-    private addNew(newMessageData?: MessageData): MessageData | undefined {
+    private addNew = (newMessageData?: MessageData): MessageData | undefined => {
         //if this instance is properly connected and the user hvnt sent empty messages, add the new message, giving
         //this instances id, ip, timestamp, color etc
         if (
@@ -300,7 +290,7 @@ export default class MessageContainer extends React.Component<
         return undefined
     }
 
-    handleAddButtonClick() {
+    private handleAddButtonClick = () => {
         //if there is just 1 button press in the span of 200 ms,
         //message wont be shown realtime
         //if the button is pressed again before 200ms, resets buttoncount and sets showrealtime to false
@@ -328,20 +318,22 @@ export default class MessageContainer extends React.Component<
     }
 
     //for changing the message color of this user
-    changeMyColor(newColor: string) {
+    private changeMyColor = (newColor: string) => {
         //strictly checking connection
         if (
             this.state.connected &&
             this.state.id &&
             this.state.ip &&
             this.socket
-        ) {           
-
+        ) {
             let eventData: colorChangeEventData = {
                 clientID: this.state.id,
                 clientIP: this.state.ip,
                 newColor,
-                currentMessageArray: this.changeColorByClientID(this.state.id, newColor)
+                currentMessageArray: this.changeColorByClientID(
+                    this.state.id,
+                    newColor
+                )
             }
 
             this.socket.emit('colorChangeEvent', eventData)
@@ -351,7 +343,7 @@ export default class MessageContainer extends React.Component<
 
     //for nonshowrealtime messages
     //it emits the newMessageEvent after the message has been edited
-    onSend(message: MessageData) {
+    private onSend = (message: MessageData) => {
         if (this.socket && message.editedAt == 0) {
             message.createdAt = new Date().getTime()
             this.modifybyID(message.messageID, undefined, message.createdAt)
@@ -360,7 +352,7 @@ export default class MessageContainer extends React.Component<
         if (!this.socket) showErrorToast("Can't send message")
     }
 
-    handleChange(messageID: string, newText: string[]) {
+    private handleChange = (messageID: string, newText: string[]) => {
         //if properly connected update state and the message array received from modifybyID
         if (
             this.state.id &&
@@ -383,18 +375,18 @@ export default class MessageContainer extends React.Component<
         } else showErrorToast("Can't edit message.")
     }
 
-    openDrawer() {
+    private openDrawer = () => {
         this.setState({ drawerOpen: true })
     }
-    closeDrawer() {
+    private closeDrawer = () => {
         this.setState({ drawerOpen: false })
     }
 
-    handleMessageFocus() {
+    private handleMessageFocus = () => {
         this.setState({ isFocused: true })
     }
 
-    handleMessageBlur() {
+    private handleMessageBlur = () => {
         this.setState({ isFocused: false })
     }
 
