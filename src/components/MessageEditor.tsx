@@ -1,4 +1,4 @@
-import React, { ChangeEvent, RefObject, MouseEvent } from 'react'
+import React, { ChangeEvent, RefObject, MouseEvent} from 'react'
 import ReactDOM from 'react-dom'
 import { MessageEditorProp, MessageEditorState } from '../types/MessageTypes'
 import { EditableText, Button, Classes, FileInput } from '@blueprintjs/core'
@@ -9,10 +9,34 @@ export class MessageEditor extends React.Component<
     MessageEditorState
 > {
     private refToImageInput: RefObject<HTMLInputElement>
+    private refToTextInput: RefObject<EditableText>
     constructor(props: MessageEditorProp) {
         super(props)
         this.refToImageInput = React.createRef()
+        this.refToTextInput = React.createRef()
         this.state={images:[]}
+    }
+
+    componentDidMount(){
+        let thisElement = ReactDOM.findDOMNode(this)
+        if(thisElement instanceof Element){
+            let textArea = thisElement.querySelector('textarea')
+            if(textArea){
+                textArea.onpaste = function(this: DocumentAndElementEventHandlers, ev: ClipboardEvent){
+                    console.log('paste!!')
+                }
+            }
+        }
+        // if(textInputContainer) {
+        //     console.log(textInputContainer)
+        //     let textarea = textInputContainer.
+        //     if(textarea){
+        //         console.log(textarea)
+        //         textarea.onblur = function(this: GlobalEventHandlers,ev: FocusEvent){
+        //             console.log('bla')
+        //         }
+        //     }
+        // }
     }
 
     private handleFileInput = (ev: ChangeEvent<HTMLInputElement>) => {
@@ -79,6 +103,7 @@ export class MessageEditor extends React.Component<
                 style={{ width: this.props.width, height: 'auto' }}
             >
                 <EditableText
+                    ref={this.refToTextInput}
                     className='d-block'
                     placeholder='Say something, its free :D'
                     multiline={true}

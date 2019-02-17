@@ -8,6 +8,7 @@ export const ImageRack = (props: ImageRackProp) => {
             {props.images.map((element: ReactImageElement, index: number) => {
                 return (
                     <div
+                        key={index}
                         className='imageContainer border border-dark mx-2'
                         style={{ height: 'auto', width: 102 }}
                     >
