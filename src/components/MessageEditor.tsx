@@ -22,8 +22,11 @@ export class MessageEditor extends React.Component<
         if(thisElement instanceof Element){
             let textArea = thisElement.querySelector('textarea')
             if(textArea){
-                textArea.onpaste = function(this: DocumentAndElementEventHandlers, ev: ClipboardEvent){
+                textArea.onpaste = (ev: ClipboardEvent)=>{
                     console.log('paste!!')
+                    var files = ev.clipboardData.files;
+                    if (files.length > 0)
+                        this.handleImage(files)
                 }
             }
         }
