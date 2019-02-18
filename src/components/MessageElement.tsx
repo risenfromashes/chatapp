@@ -65,14 +65,12 @@ export default class MessageElement extends React.Component<MessageElementProp, 
     }
 
     private submit = () => {
-        this.submitTimer = setTimeout(() => {
-            if (this.props.editable && this.canFinishEdit && this.state.toggleEdit) {
-                if(!this.props.messageData.showRealTime && (this.props.messageData.editedAt == 0)) this.props.onSend(this.props.messageData)
-                this.props.onTextChange(this.props.messageData.messageID, this.state.text.split('\n'))
-                if(this.props.editable) this.props.onBlur()
-                this.setState({toggleEdit: false})
-            }
-        },200)        
+        if (this.props.editable && this.canFinishEdit && this.state.toggleEdit) {
+            if(!this.props.messageData.showRealTime && (this.props.messageData.editedAt == 0)) this.props.onSend(this.props.messageData)
+            this.props.onTextChange(this.props.messageData.messageID, this.state.text.split('\n'))
+            if(this.props.editable) this.props.onBlur()
+            this.setState({toggleEdit: false})
+        }        
     }
 
     private handleClickSubmit = (ev: MouseEvent)=>{
