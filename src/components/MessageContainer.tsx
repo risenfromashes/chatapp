@@ -12,7 +12,8 @@ import {
 import {
     textUpdateEventData,
     textEditEventData,
-    colorChangeEventData
+    colorChangeEventData,
+    newImageEventData
 } from '../types/EventDataTypes'
 
 import getRandomColor from '../utils/colors'
@@ -28,6 +29,8 @@ import {
     Classes
 } from '@blueprintjs/core'
 import { SettingsDrawer } from './SettingsDrawer'
+import { ImageData } from '../types/ImageTypes'
+import { EVENTS } from '../types/Event';
 
 export default class MessageContainer extends React.Component<
     MessageContainerProp,
@@ -56,6 +59,7 @@ export default class MessageContainer extends React.Component<
                     ? this.props.Messages.map(Message => {
                         return {
                             text: Message.text,
+                            images: Message.images,
                             createdAt: Message.createdAt,
                             editedAt: Message.editedAt,
                             senderIP: Message.senderIP,
@@ -117,7 +121,7 @@ export default class MessageContainer extends React.Component<
 
             //if text is changed update the text by id
             this.socket.on(
-                'textUpdateEvent',
+                EVENTS.TEXT_UPDATE,
                 (updateEventData: textUpdateEventData) => {
                     this.modifybyID(
                         updateEventData.messageID,
@@ -126,13 +130,13 @@ export default class MessageContainer extends React.Component<
                 }
             )
             //if there is new text , gets the data and adds it
-            this.socket.on('newMessageEvent', (newMessage: MessageData) => {
+            this.socket.on(EVENTS.NEW_MESSAGE, (newMessage: MessageData) => {
                 this.addNew(newMessage)
             })
 
             //if someone changes his color
             this.socket.on(
-                'colorChangeEvent',
+                EVENTS.COLOR_CHANGE,
                 (eventData: colorChangeEventData) => {
                     let newMessageState = this.changeColorByClientID(
                         eventData.clientID,
@@ -141,7 +145,17 @@ export default class MessageContainer extends React.Component<
                     this.setState({ Messages: newMessageState })
                 }
             )
-
+            //if images in a message is modified
+            this.socket.on(
+                EVENTS.IMAGE_CHANGE,
+                (eventData: newImageEventData) => {
+                    this.modifybyID(
+                        eventData.messageID,
+                        undefined,
+                        eventData.newImages
+                    )
+                }
+            )
             //enables space key as a shortcut for the button click
             $(document).on('keypress', (e: any) => {
                 if (e.which == 32 && !this.state.isFocused) {
@@ -174,7 +188,8 @@ export default class MessageContainer extends React.Component<
     //and setStates the updated array
     private modifybyID = (
         messageID: string,
-        text?: string[],
+        text?: string[],        
+        images?: ImageData[],
         time?: number
     ): MessageData[] => {
         let newMessageData: MessageData
@@ -185,6 +200,7 @@ export default class MessageContainer extends React.Component<
                     newMessageData = {
                         messageID,
                         text: text || MessageElement.text,
+                        images: images || MessageElement.images,
                         createdAt: time || MessageElement.createdAt,
                         editedAt: new Date().getTime(),
                         senderID: MessageElement.senderID,
@@ -217,6 +233,7 @@ export default class MessageContainer extends React.Component<
                     newMessageData = {
                         messageID: MessageElement.messageID,
                         text: MessageElement.text,
+                        images: MessageElement.images,
                         createdAt: MessageElement.createdAt,
                         editedAt: MessageElement.editedAt,
                         senderID: MessageElement.senderID,
@@ -236,7 +253,9 @@ export default class MessageContainer extends React.Component<
         return newMessagesState
     }
 
-    private addNew = (newMessageData?: MessageData): MessageData | undefined => {
+    private addNew = (
+        newMessageData?: MessageData
+    ): MessageData | undefined => {
         //if this instance is properly connected and the user hvnt sent empty messages, add the new message, giving
         //this instances id, ip, timestamp, color etc
         if (
@@ -251,6 +270,7 @@ export default class MessageContainer extends React.Component<
             } else {
                 newMessage = {
                     text: [],
+                    images: [],
                     messageID: uuidv1(),
                     senderID: this.state.id,
                     senderIP: this.state.ip,
@@ -301,7 +321,7 @@ export default class MessageContainer extends React.Component<
                 this.buttonPressCount = 0
                 let newMessageData = this.addNew()
                 if (newMessageData && this.socket)
-                    this.socket.emit('newMessageEvent', newMessageData)
+                    this.socket.emit(EVENTS.NEW_MESSAGE, newMessageData)
             }, 200)
         } else {
             clearTimeout(this.buttonTimer)
@@ -312,7 +332,7 @@ export default class MessageContainer extends React.Component<
             //emits the event only if its showrealtime
             //otherwise it sends the event after its value is set
             if (newMessageData && this.socket && newMessageData.showRealTime)
-                this.socket.emit('newMessageEvent', newMessageData)
+                this.socket.emit(EVENTS.NEW_MESSAGE, newMessageData)
             if (!this.socket) showErrorToast("Can't send message")
         }
     }
@@ -336,7 +356,7 @@ export default class MessageContainer extends React.Component<
                 )
             }
 
-            this.socket.emit('colorChangeEvent', eventData)
+            this.socket.emit(EVENTS.COLOR_CHANGE, eventData)
             this.setState({ myColor: newColor })
         }
     }
@@ -346,13 +366,13 @@ export default class MessageContainer extends React.Component<
     private onSend = (message: MessageData) => {
         if (this.socket && message.editedAt == 0) {
             message.createdAt = new Date().getTime()
-            this.modifybyID(message.messageID, undefined, message.createdAt)
-            this.socket.emit('newMessageEvent', message)
+            this.modifybyID(message.messageID, undefined, undefined, message.createdAt)
+            this.socket.emit(EVENTS.NEW_MESSAGE, message)
         }
         if (!this.socket) showErrorToast("Can't send message")
     }
-
-    private handleChange = (messageID: string, newText: string[]) => {
+    //handles change of text
+    private handleTextChange = (messageID: string, newText: string[]) => {
         //if properly connected update state and the message array received from modifybyID
         if (
             this.state.id &&
@@ -371,8 +391,39 @@ export default class MessageContainer extends React.Component<
             if (messageID == this.mostRecentMessageID && newText.length > 0)
                 this.haveSentEmptyMessage = false
             //emits the event
-            this.socket.emit('textEditEvent', eventData)
+            this.socket.emit(EVENTS.TEXT_EDIT, eventData)
         } else showErrorToast("Can't edit message.")
+    }
+
+    //handles new image data added to message
+    private handleImagesChange = (
+        messageID: string,
+        newImages: ImageData[]
+    ) => {
+        if (
+            this.state.id &&
+            this.state.ip &&
+            this.state.connected &&
+            this.socket
+        ) {
+            let eventData: newImageEventData = {
+                clientID: this.state.id,
+                clientIP: this.state.ip,
+                messageID,
+                currentMessageArray: this.modifybyID(
+                    messageID,
+                    undefined,
+                    newImages,
+                    undefined
+                ),
+                newImages
+            }
+            //check if the message was edited by this instance
+            if (messageID == this.mostRecentMessageID && newImages.length > 0)
+                this.haveSentEmptyMessage = false
+            //emits the event
+            this.socket.emit(EVENTS.IMAGE_CHANGE, eventData)
+        } else showErrorToast("Can't add image.")
     }
 
     private openDrawer = () => {
@@ -450,7 +501,8 @@ export default class MessageContainer extends React.Component<
                                 onSend={this.onSend}
                                 onFocus={this.handleMessageFocus}
                                 onBlur={this.handleMessageBlur}
-                                onTextChange={this.handleChange}
+                                onTextChange={this.handleTextChange}
+                                onImagesChange={this.handleImagesChange}
                             />
                         )
                     })}

@@ -5,11 +5,11 @@ import $ from 'jquery'
 
 import {MessageElementProp, MessageElementState} from '../types/MessageTypes'
 
-import color from 'color'
 import MessageHeader from './MessageHeader';
 import {MessageEditor} from './MessageEditor';
 import { Card, Tooltip, Intent } from '@blueprintjs/core';
 import MessageContent from './MessageContent';
+import { ImageData } from '../types/ImageTypes';
 
 export default class MessageElement extends React.Component<MessageElementProp, MessageElementState>{
     
@@ -52,6 +52,9 @@ export default class MessageElement extends React.Component<MessageElementProp, 
         }
     }
 
+    private handleImageChange = (newImage: ImageData)=>{
+        this.props.onImagesChange(this.props.messageData.messageID,this.props.messageData.images.concat(newImage))
+    }
     private showEdit = ()=>{
         if (this.props.editable && !this.state.toggleEdit && (this.props.messageData.editedAt != 0)) {
             let thisElement = ReactDOM.findDOMNode(this)
@@ -92,7 +95,6 @@ export default class MessageElement extends React.Component<MessageElementProp, 
 
     render() {
         let toggleEdit = this.state.toggleEdit
-        let darkColor = color(this.props.messageData.color).darken(0.5).hex().toString()
         let timeString = new Date(this.props.messageData.createdAt).toLocaleTimeString()
         return (
             <Card 
@@ -109,7 +111,6 @@ export default class MessageElement extends React.Component<MessageElementProp, 
                 >
                 
                 <MessageHeader
-                    color={darkColor}
                     time={timeString}
                     sender={this.props.messageData.senderIP}
                 />
@@ -119,7 +120,8 @@ export default class MessageElement extends React.Component<MessageElementProp, 
                         id={this.props.messageData.messageID}
                         text={this.state.text}
                         width={this.width} 
-                        onFinishEditClick={this.handleClickSubmit} 
+                        onFinishEditClick={this.handleClickSubmit}
+                        onImageChange= {this.handleImageChange}
                         handlers={{
                             onCancel: this.submit,
                             onChange: this.handleChange,
@@ -146,6 +148,7 @@ export default class MessageElement extends React.Component<MessageElementProp, 
                                     onPreviewClose={this.handlePreviewClose} 
                                     texts={
                                         (this.props.messageData.text && this.props.messageData.text.length > 0) ? this.props.messageData.text : [this.defaultText]} 
+                                    images={this.props.messageData.images}
                                 />
                             </div>
                         </Tooltip>

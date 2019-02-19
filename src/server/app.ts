@@ -2,10 +2,13 @@ import express, { Request, Response } from 'express'
 import path from 'path'
 import socketIO, { Socket }  from 'socket.io'
 import {MessageData, MessageContainerState, ConnectionState} from '../types/MessageTypes'
-import {textEditEventData, textUpdateEventData, colorChangeEventData} from '../types/EventDataTypes'
+import {textEditEventData, textUpdateEventData, colorChangeEventData, newImageEventData} from '../types/EventDataTypes'
 import { stat } from 'fs';
-
+import uuidv1 from 'uuid/v1'
+import multer from 'multer'
 import rendertostring from './ssr'
+import { EVENTS } from '../types/Event';
+
 
 const app = express()
 const server = app.listen(process.env.PORT || 80, () => {
@@ -14,6 +17,20 @@ const server = app.listen(process.env.PORT || 80, () => {
 
 const io = socketIO.listen(server)
 
+
+const diskStorage = multer.diskStorage({
+    destination: (req,file,callback)=>{
+        callback(null,path.resolve(__dirname,'../public/image_uploads'))
+    },
+    filename: (req: any,file,callback)=>{
+        let fileName = uuidv1() + '-' + file.originalname
+        req.relPath = '../image_uploads/' + fileName
+        callback(null, fileName)
+    }
+})
+
+const imageUpload = multer({storage: diskStorage})
+const imageUploadMiddleWare = imageUpload.fields([{name:'image', maxCount: 1}])
 
 //keeps all the messages from server startup
 let messageData: MessageData[] = []
@@ -31,7 +48,7 @@ io.on('connection', (socket: Socket) =>{
 
     socket.emit('connection', connectionState)
 
-    socket.on('textEditEvent', (eventData: textEditEventData)=>{
+    socket.on(EVENTS.TEXT_EDIT, (eventData: textEditEventData)=>{
         
         messageData = eventData.currentMessageArray
 
@@ -42,19 +59,24 @@ io.on('connection', (socket: Socket) =>{
             messageID: eventData.messageID
         }
 
-        socket.broadcast.emit('textUpdateEvent', updateEventData)
+        socket.broadcast.emit(EVENTS.TEXT_UPDATE, updateEventData)
     })
 
-    socket.on('newMessageEvent', (eventData: MessageData)=>{
+    socket.on(EVENTS.NEW_MESSAGE, (eventData: MessageData)=>{
         if(eventData) {
             messageData.push(eventData)
-            socket.broadcast.emit('newMessageEvent', eventData)
+            socket.broadcast.emit(EVENTS.NEW_MESSAGE, eventData)
         }
     })
 
-    socket.on('colorChangeEvent', (eventData: colorChangeEventData)=>{
+    socket.on(EVENTS.COLOR_CHANGE, (eventData: colorChangeEventData)=>{
         messageData = eventData.currentMessageArray
-        socket.broadcast.emit('colorChangeEvent', eventData)
+        socket.broadcast.emit(EVENTS.COLOR_CHANGE, eventData)
+    })
+
+    socket.on(EVENTS.IMAGE_CHANGE, (eventData: newImageEventData)=>{
+        messageData = eventData.currentMessageArray
+        socket.broadcast.emit(EVENTS.IMAGE_CHANGE, eventData)
     })
 
 })
@@ -66,6 +88,9 @@ io.on('connection', (socket: Socket) =>{
  * 
  *  newMessageEvent: emitted by a client | clientid,ip and text is sent as MessageData =>  MessageData
  *  newMessageEvent: broadcasted by the server | clientid,ip,messageID, newText is sent as MessageData => MessageData
+ * 
+ *  newImageEvent: emitted by a client | clientid, messageid and imagedata is provided
+ *  newImageEvent: broadcasted by the server| same data is sended back
  * 
  */
 
@@ -80,5 +105,11 @@ app.get('/',(request: Request, response: Response):void=>{
 })
 
 app.get('/getMessages',(request: Request, response: Response)=>{
-    response.json(messageData)
+    response.json(messageData) 
+})
+app.post('/upload',imageUploadMiddleWare,(request: any, response: Response)=>{
+    response.json({
+        status: 'success',
+        imagePath: request.relPath
+    })
 })

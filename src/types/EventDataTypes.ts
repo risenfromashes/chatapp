@@ -1,5 +1,6 @@
 import { string } from 'prop-types'
 import { MessageData } from './MessageTypes'
+import { ImageData } from './ImageTypes';
 
 /**
  * events:
@@ -30,5 +31,13 @@ export interface colorChangeEventData {
     clientID: string
     clientIP: string
     newColor: string
+    currentMessageArray: MessageData[]
+}
+
+export interface newImageEventData {
+    clientID: string
+    clientIP: string
+    messageID: string
+    newImages: ImageData[]
     currentMessageArray: MessageData[]
 }

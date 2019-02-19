@@ -12,7 +12,6 @@ let messageData: any
 
 $.getJSON('/getMessages',(data: any)=>{
     messageData = data
-    console.log(messageData)
     ReactDOM.hydrate(
         <MessageContainer Socket={socket} Messages= {messageData}/>,
         document.getElementById('root')

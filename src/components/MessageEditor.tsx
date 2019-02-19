@@ -1,8 +1,8 @@
-import React, { ChangeEvent, RefObject, MouseEvent} from 'react'
+import React, { ChangeEvent, RefObject, MouseEvent } from 'react'
 import ReactDOM from 'react-dom'
 import { MessageEditorProp, MessageEditorState } from '../types/MessageTypes'
 import { EditableText, Button, Classes, FileInput } from '@blueprintjs/core'
-import { ImageRack } from './ImageRack';
+import { ImageRack } from './ImageRack'
 
 export class MessageEditor extends React.Component<
     MessageEditorProp,
@@ -14,19 +14,18 @@ export class MessageEditor extends React.Component<
         super(props)
         this.refToImageInput = React.createRef()
         this.refToTextInput = React.createRef()
-        this.state={images:[]}
+        this.state = { images: [] }
     }
 
-    componentDidMount(){
+    componentDidMount() {
         let thisElement = ReactDOM.findDOMNode(this)
-        if(thisElement instanceof Element){
+        if (thisElement instanceof Element) {
             let textArea = thisElement.querySelector('textarea')
-            if(textArea){
-                textArea.onpaste = (ev: ClipboardEvent)=>{
+            if (textArea) {
+                textArea.onpaste = (ev: ClipboardEvent) => {
                     console.log('paste!!')
-                    var files = ev.clipboardData.files;
-                    if (files.length > 0)
-                        this.handleImage(files)
+                    var files = ev.clipboardData.files
+                    if (files.length > 0) this.handleImage(files)
                 }
             }
         }
@@ -43,9 +42,9 @@ export class MessageEditor extends React.Component<
     }
 
     private handleFileInput = (ev: ChangeEvent<HTMLInputElement>) => {
-        if (ev.target && ev.target.files && ev.target.files.length > 0){
+        if (ev.target && ev.target.files && ev.target.files.length > 0) {
             this.handleImage(ev.target.files)
-        }                    
+        }
     }
 
     private handleClick = (ev: MouseEvent) => {
@@ -76,25 +75,35 @@ export class MessageEditor extends React.Component<
                     }
                 })
 
-                this.setState({images: this.state.images.concat(imageElement)})
+                this.setState({
+                    images: this.state.images.concat(imageElement)
+                })
 
                 console.log('... file[' + i + '].name = ' + files[i].name)
 
-                // var formData = new FormData()
-                // formData.append('image' + i, files[i])
-                // let sendRequest = () => {
-                //     $.ajax({
-                //         type: 'post',
-                //         url: '/upload',
-                //         data: formData,
-                //         contentType: false,
-                //         processData: false,
-                //         success: function(response) {
-                //             if (response.status != 'success') sendRequest()
-                //         }
-                //     })
-                // }
-                // sendRequest()
+                var formData = new FormData()
+
+                formData.append('image', files[i])
+
+                let sendRequest = () => {
+                    fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(res => res.json())
+                        .then(res => {                            
+                            if (res.status != 'success') sendRequest()
+                            else {
+                                this.props.onImageChange({
+                                    height: 0,
+                                    width:0,
+                                    src: res.imagePath
+                                })
+                            }
+                        })
+                        .catch(e => sendRequest())
+                }
+                sendRequest()
             }
         }
     }
@@ -119,7 +128,7 @@ export class MessageEditor extends React.Component<
                     {...this.props.handlers}
                 />
 
-                <ImageRack images={this.state.images}/>
+                <ImageRack images={this.state.images} />
 
                 <div className='d-flex flex-wrap align-content-center mt-4'>
                     <div className='imageInput mr-auto'>

@@ -8,10 +8,9 @@ import {
     MouseEvent
 } from 'react'
 import { TreeEventHandler, ITreeNode } from '@blueprintjs/core'
-import { ReactImageElement } from './ImageTypes';
+import { ReactImageElement, ImageData } from './ImageTypes';
 
 export interface MessageHeaderProp {
-    color: string
     sender: string
     time: string
 }
@@ -26,6 +25,7 @@ export interface MessageEditorProp {
         onConfirm: (value: string) => void
         onEdit: (value: string) => void
     }
+    onImageChange: (newImage: ImageData)=> void
     onFinishEditClick: (event: MouseEvent) => void
     onCancelSubmit: () => void
 }
@@ -38,6 +38,7 @@ export interface MessageContentProps {
     onPreviewClose: () => void
     isEditable: boolean
     texts: string[]
+    images: ImageData[]
 }
 
 export interface MessageElementProp {
@@ -47,6 +48,7 @@ export interface MessageElementProp {
     onFocus: () => void
     onBlur: () => void
     onTextChange: (messageID: string, text: string[]) => void
+    onImagesChange: (messageID: string, images: ImageData[])=>void
 }
 
 export interface MessageElementState {
@@ -62,6 +64,7 @@ export interface MessageData {
     createdAt: number
     editedAt: number
     text: string[]
+    images: ImageData[]
     color: string
     showRealTime: boolean
 }

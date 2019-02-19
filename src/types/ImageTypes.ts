@@ -15,6 +15,10 @@ export interface Dimensions {
     width: number
 }
 
+export interface ImageData extends Dimensions{
+    src: string
+}
+
 export interface ImageCallback {
     (dim: Dimensions): void
 }

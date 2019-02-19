@@ -2,6 +2,7 @@ import React from 'react'
 import { Tooltip, Intent } from '@blueprintjs/core';
 import {MessageContentProps} from '../types/MessageTypes'
 import { ImageBox } from './ImageBox';
+import { ImageData } from '../types/ImageTypes';
 
 // TODO: Change it to a text and image display component, also pass in actual width to ImageBox
 const MessageContent = (props : MessageContentProps)=>(    
@@ -18,10 +19,18 @@ const MessageContent = (props : MessageContentProps)=>(
                 })
                 )
             }
-            <ImageBox  
-                src='http://livedoor.blogimg.jp/kamakuraidola/imgs/f/a/fa34c514.png' parentWidth={500}
-                {...props}
-            />
+            <div className="images">
+                {(props.images && props.images.length > 0) &&
+                    (props.images.map((_image:ImageData, index: number)=>{
+                        return(
+                            <ImageBox  
+                            src={_image.src} parentWidth={500}
+                            {...props}
+                            />
+                        )
+                    }))
+                }
+            </div>
         </div>
 )
 
