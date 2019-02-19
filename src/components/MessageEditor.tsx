@@ -29,16 +29,6 @@ export class MessageEditor extends React.Component<
                 }
             }
         }
-        // if(textInputContainer) {
-        //     console.log(textInputContainer)
-        //     let textarea = textInputContainer.
-        //     if(textarea){
-        //         console.log(textarea)
-        //         textarea.onblur = function(this: GlobalEventHandlers,ev: FocusEvent){
-        //             console.log('bla')
-        //         }
-        //     }
-        // }
     }
 
     private handleFileInput = (ev: ChangeEvent<HTMLInputElement>) => {
@@ -91,12 +81,12 @@ export class MessageEditor extends React.Component<
                         body: formData
                     })
                         .then(res => res.json())
-                        .then(res => {                            
+                        .then(res => {
                             if (res.status != 'success') sendRequest()
                             else {
                                 this.props.onImageChange({
                                     height: 0,
-                                    width:0,
+                                    width: 0,
                                     src: res.imagePath
                                 })
                             }

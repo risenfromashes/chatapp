@@ -30,7 +30,7 @@ import {
 } from '@blueprintjs/core'
 import { SettingsDrawer } from './SettingsDrawer'
 import { ImageData } from '../types/ImageTypes'
-import { EVENTS } from '../types/Event';
+import { EVENTS } from '../types/Event'
 
 export default class MessageContainer extends React.Component<
     MessageContainerProp,
@@ -57,18 +57,18 @@ export default class MessageContainer extends React.Component<
             Messages:
                 this.props.Messages && this.props.Messages.length > 0
                     ? this.props.Messages.map(Message => {
-                        return {
-                            text: Message.text,
-                            images: Message.images,
-                            createdAt: Message.createdAt,
-                            editedAt: Message.editedAt,
-                            senderIP: Message.senderIP,
-                            senderID: Message.senderID,
-                            messageID: Message.messageID,
-                            color: Message.color,
-                            showRealTime: Message.showRealTime
-                        }
-                    })
+                          return {
+                              text: Message.text,
+                              images: Message.images,
+                              createdAt: Message.createdAt,
+                              editedAt: Message.editedAt,
+                              senderIP: Message.senderIP,
+                              senderID: Message.senderID,
+                              messageID: Message.messageID,
+                              color: Message.color,
+                              showRealTime: Message.showRealTime
+                          }
+                      })
                     : [],
             id: undefined,
             ip: undefined,
@@ -188,7 +188,7 @@ export default class MessageContainer extends React.Component<
     //and setStates the updated array
     private modifybyID = (
         messageID: string,
-        text?: string[],        
+        text?: string[],
         images?: ImageData[],
         time?: number
     ): MessageData[] => {
@@ -292,7 +292,6 @@ export default class MessageContainer extends React.Component<
             //shows the newmessage alert only if the user has scrolled above
             let docHeight = $(document).innerHeight()
             if (window && docHeight) {
-                console.log(window.pageYOffset, docHeight, window.innerHeight)
                 if (
                     !this.myNewText &&
                     window.pageYOffset < docHeight - window.innerHeight - 200
@@ -366,7 +365,12 @@ export default class MessageContainer extends React.Component<
     private onSend = (message: MessageData) => {
         if (this.socket && message.editedAt == 0) {
             message.createdAt = new Date().getTime()
-            this.modifybyID(message.messageID, undefined, undefined, message.createdAt)
+            this.modifybyID(
+                message.messageID,
+                undefined,
+                undefined,
+                message.createdAt
+            )
             this.socket.emit(EVENTS.NEW_MESSAGE, message)
         }
         if (!this.socket) showErrorToast("Can't send message")

@@ -5,10 +5,11 @@ import {
     ClipboardEvent,
     FormEvent,
     FocusEvent,
-    MouseEvent
+    MouseEvent,
+    RefObject
 } from 'react'
-import { TreeEventHandler, ITreeNode } from '@blueprintjs/core'
-import { ReactImageElement, ImageData } from './ImageTypes';
+import { TreeEventHandler, ITreeNode, Card } from '@blueprintjs/core'
+import { ReactImageElement, ImageData } from './ImageTypes'
 
 export interface MessageHeaderProp {
     sender: string
@@ -25,7 +26,7 @@ export interface MessageEditorProp {
         onConfirm: (value: string) => void
         onEdit: (value: string) => void
     }
-    onImageChange: (newImage: ImageData)=> void
+    onImageChange: (newImage: ImageData) => void
     onFinishEditClick: (event: MouseEvent) => void
     onCancelSubmit: () => void
 }
@@ -36,9 +37,14 @@ export interface MessageEditorState {
 export interface MessageContentProps {
     onPreviewOpen: () => void
     onPreviewClose: () => void
+    getComputedParentWidth: (callback: Function) => void
     isEditable: boolean
     texts: string[]
     images: ImageData[]
+}
+
+export interface MessageContentState {
+    width?: number
 }
 
 export interface MessageElementProp {
@@ -48,7 +54,7 @@ export interface MessageElementProp {
     onFocus: () => void
     onBlur: () => void
     onTextChange: (messageID: string, text: string[]) => void
-    onImagesChange: (messageID: string, images: ImageData[])=>void
+    onImagesChange: (messageID: string, images: ImageData[]) => void
 }
 
 export interface MessageElementState {
