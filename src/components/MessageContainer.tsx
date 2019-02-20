@@ -56,19 +56,7 @@ export default class MessageContainer extends React.Component<
         this.state = {
             Messages:
                 this.props.Messages && this.props.Messages.length > 0
-                    ? this.props.Messages.map(Message => {
-                          return {
-                              text: Message.text,
-                              images: Message.images,
-                              createdAt: Message.createdAt,
-                              editedAt: Message.editedAt,
-                              senderIP: Message.senderIP,
-                              senderID: Message.senderID,
-                              messageID: Message.messageID,
-                              color: Message.color,
-                              showRealTime: Message.showRealTime
-                          }
-                      })
+                    ? this.props.Messages
                     : [],
             id: undefined,
             ip: undefined,
@@ -197,17 +185,12 @@ export default class MessageContainer extends React.Component<
         let newMessagesState: MessageData[] = prevMessagesState.map(
             MessageElement => {
                 if (MessageElement.messageID == messageID) {
-                    newMessageData = {
-                        messageID,
+                    newMessageData = Object.assign(MessageElement, {
                         text: text || MessageElement.text,
                         images: images || MessageElement.images,
                         createdAt: time || MessageElement.createdAt,
-                        editedAt: new Date().getTime(),
-                        senderID: MessageElement.senderID,
-                        senderIP: MessageElement.senderIP,
-                        color: MessageElement.color,
-                        showRealTime: MessageElement.showRealTime
-                    }
+                        editedAt: new Date().getTime()
+                    })
                     return newMessageData
                 } else {
                     return MessageElement
@@ -230,17 +213,9 @@ export default class MessageContainer extends React.Component<
         let newMessagesState: MessageData[] = prevMessagesState.map(
             MessageElement => {
                 if (MessageElement.senderID == clientID) {
-                    newMessageData = {
-                        messageID: MessageElement.messageID,
-                        text: MessageElement.text,
-                        images: MessageElement.images,
-                        createdAt: MessageElement.createdAt,
-                        editedAt: MessageElement.editedAt,
-                        senderID: MessageElement.senderID,
-                        senderIP: MessageElement.senderIP,
-                        color: newColor,
-                        showRealTime: MessageElement.showRealTime
-                    }
+                    newMessageData = Object.assign(MessageElement, {
+                        color: newColor
+                    })
                     return newMessageData
                 } else {
                     return MessageElement
