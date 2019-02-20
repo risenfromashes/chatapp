@@ -17,7 +17,7 @@ export interface MessageHeaderProp {
 }
 
 export interface MessageEditorProp {
-    width: string | number
+    width: number
     text: string
     id: string
     handlers: {
@@ -41,10 +41,12 @@ export interface MessageContentProps {
     isEditable: boolean
     texts: string[]
     images: ImageData[]
+    cardWidth: number
 }
 
 export interface MessageContentState {
-    width?: number
+    readyForImage: boolean
+    width: number
 }
 
 export interface MessageElementProp {
@@ -61,6 +63,7 @@ export interface MessageElementState {
     text: string
     toggleEdit: boolean
     previewOpen: boolean
+    width: number
 }
 
 export interface MessageData {

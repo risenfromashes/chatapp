@@ -1,6 +1,15 @@
-
 import $ from 'jquery'
-import React, { ReactNode, Props, MouseEvent, ChangeEvent, FocusEvent, CSSProperties, KeyboardEvent, ClipboardEvent, FormEvent } from 'react'
+import React, {
+    ReactNode,
+    Props,
+    MouseEvent,
+    ChangeEvent,
+    FocusEvent,
+    CSSProperties,
+    KeyboardEvent,
+    ClipboardEvent,
+    FormEvent
+} from 'react'
 import ReactDOM from 'react-dom'
 import MessageContainer from '../components/MessageContainer'
 
@@ -10,15 +19,12 @@ const socket: SocketIOClient.Socket = io(window.location.origin)
 
 let messageData: any
 
-$.getJSON('/getMessages',(data: any)=>{
+$.getJSON('/getMessages', (data: any) => {
     messageData = data
     ReactDOM.hydrate(
-        <MessageContainer Socket={socket} Messages= {messageData}/>,
+        <MessageContainer Socket={socket} Messages={messageData} />,
         document.getElementById('root')
     )
 })
 
-$(document).ready(()=>{
-   
-})
-
+$(document).ready(() => {})

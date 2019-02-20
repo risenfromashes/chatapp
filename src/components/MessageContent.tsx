@@ -1,9 +1,10 @@
 import React from 'react'
-import { Tooltip, Intent } from '@blueprintjs/core'
+import { Tooltip, Intent, ResizeSensor } from '@blueprintjs/core'
 import { MessageContentProps, MessageContentState } from '../types/MessageTypes'
 import { ImageBox } from './ImageBox'
 import { ImageData } from '../types/ImageTypes'
 import ReactDOM from 'react-dom'
+import { LoadScreen } from './LoadScreen'
 
 // TODO: Change it to a text and image display component, also pass in actual width to ImageBox
 class MessageContent extends React.Component<
@@ -13,15 +14,29 @@ class MessageContent extends React.Component<
     constructor(props: MessageContentProps) {
         super(props)
         this.state = {
-            width: undefined
+            width: this.props.cardWidth,
+            readyForImage: false
         }
     }
+
     componentDidMount = () => {
+        this.updateWidth()
+    }
+
+    componentDidUpdate = (prevProps: MessageContentProps) => {
+        if (prevProps.cardWidth != this.props.cardWidth) {
+            this.setState({ readyForImage: false })
+        } else if (!this.state.readyForImage) {
+            this.updateWidth()
+        }
+    }
+
+    private updateWidth = () => {
         this.props.getComputedParentWidth((width: number) => {
             if (width != 0) {
-                console.log(width)
                 this.setState({
-                    width
+                    width,
+                    readyForImage: true
                 })
             }
         })
@@ -29,7 +44,7 @@ class MessageContent extends React.Component<
 
     render() {
         return (
-            <div>
+            <div className='messageContent'>
                 {this.props.texts &&
                     this.props.texts.length > 0 &&
                     this.props.texts.map((text: string, index) => {
@@ -46,22 +61,26 @@ class MessageContent extends React.Component<
                             <br key={index} />
                         )
                     })}
-                <div className='images'>
-                    {this.props.images &&
-                        this.props.images.length > 0 &&
-                        this.props.images.map(
-                            (_image: ImageData, index: number) => {
-                                return (
-                                    <ImageBox
-                                        key={index}
-                                        src={_image.src}
-                                        parentWidth={this.state.width || 200}
-                                        {...this.props}
-                                    />
-                                )
-                            }
-                        )}
-                </div>
+                {this.state.readyForImage ? (
+                    <div className='images'>
+                        {this.props.images &&
+                            this.props.images.length > 0 &&
+                            this.props.images.map(
+                                (_image: ImageData, index: number) => {
+                                    return (
+                                        <ImageBox
+                                            key={index}
+                                            src={_image.src}
+                                            parentWidth={this.state.width - 40}
+                                            {...this.props}
+                                        />
+                                    )
+                                }
+                            )}
+                    </div>
+                ) : (
+                    <LoadScreen />
+                )}
             </div>
         )
     }

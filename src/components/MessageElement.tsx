@@ -14,7 +14,13 @@ import { MessageElementProp, MessageElementState } from '../types/MessageTypes'
 
 import MessageHeader from './MessageHeader'
 import { MessageEditor } from './MessageEditor'
-import { Card, Tooltip, Intent } from '@blueprintjs/core'
+import {
+    Card,
+    Tooltip,
+    Intent,
+    ResizeSensor,
+    IResizeEntry
+} from '@blueprintjs/core'
 import MessageContent from './MessageContent'
 import { ImageData } from '../types/ImageTypes'
 
@@ -23,12 +29,16 @@ export default class MessageElement extends React.Component<
     MessageElementState
 > {
     private canFinishEdit = false
-    private width: number | string = '50vw'
 
     private submitTimer: any
     private defaultText: string
     private refToCard: RefObject<Card>
     private mounted: boolean = false
+    private resizeTimer?: any
+    //for comparing to present width to detect resize
+    private prevWindowWidth: number = process.env.BROWSER
+        ? window.innerWidth
+        : 0
 
     constructor(props: MessageElementProp) {
         super(props)
@@ -36,7 +46,7 @@ export default class MessageElement extends React.Component<
 
         this.defaultText = `User from ${
             this.props.messageData.senderIP
-        } wants to say somehting`
+        } wants to say something`
         if (
             this.props.messageData.text &&
             this.props.messageData.text.length > 0
@@ -44,14 +54,26 @@ export default class MessageElement extends React.Component<
             this.state = {
                 text: this.props.messageData.text.join('\n'),
                 toggleEdit: false,
-                previewOpen: false
+                previewOpen: false,
+                width: process.env.BROWSER ? window.innerWidth / 2 : 200
             }
         else
             this.state = {
                 text: '',
                 toggleEdit: this.props.messageData.editedAt == 0 ? true : false,
-                previewOpen: false
+                previewOpen: false,
+                width: process.env.BROWSER ? window.innerWidth / 2 : 200
             }
+
+        //watching for resize
+        setInterval(() => {
+            if (process.env.BROWSER) {
+                if (window.innerWidth != this.prevWindowWidth) {
+                    this.prevWindowWidth = window.innerWidth
+                    this.handleResize()
+                }
+            }
+        }, 100)
     }
 
     componentDidMount() {
@@ -65,32 +87,45 @@ export default class MessageElement extends React.Component<
         //showedit doesnt call this for the first time
         if (this.props.messageData.editedAt == 0 && this.props.editable)
             this.props.onFocus()
+
+        //also resize for fullscreenEvent
+        if (process.env.BROWSER) {
+            document.addEventListener('fullscreenchange', () => {
+                this.handleResize()
+            })
+        }
+    }
+
+    componentDidUpdate = (prevProps: MessageElementProp) => {
+        if (prevProps.messageData != this.props.messageData) this.handleResize()
     }
 
     private getComputedWidth = (callback: Function) => {
+        let interval: any
+        let getWidth = (): number => {
+            let _card = this.refToCard.current
+            if (_card) {
+                let _cardElement = ReactDOM.findDOMNode(_card)
+                if (_cardElement instanceof Element) {
+                    console.log('doing resize')
+                    return parseInt(
+                        window
+                            .getComputedStyle(_cardElement)
+                            .getPropertyValue('width')
+                            .replace('px', '')
+                    )
+                } else return 0
+            } else return 0
+        }
         //waiting till component gets mounted to get the proper width
-        let interval = setInterval(() => {
-            if (this.mounted) {
-                let _card = this.refToCard.current
-                console.log(_card)
-                if (_card) {
-                    let _cardElement = ReactDOM.findDOMNode(_card)
-                    if (_cardElement instanceof Element) {
-                        clearInterval(interval)
-                        return callback(
-                            parseInt(
-                                window
-                                    .getComputedStyle(_cardElement)
-                                    .getPropertyValue('width')
-                                    .replace('px', '')
-                            )
-                        )
-                    }
+        if (this.mounted) callback(getWidth())
+        else
+            interval = setInterval(() => {
+                if (this.mounted) {
+                    clearInterval(interval)
+                    callback(getWidth())
                 }
-                clearInterval(interval)
-                callback(0)
-            }
-        }, Infinity)
+            }, Infinity)
     }
 
     private handleChange = (val: string) => {
@@ -113,6 +148,7 @@ export default class MessageElement extends React.Component<
     }
 
     private handleImageChange = (newImage: ImageData) => {
+        this.canFinishEdit = true
         this.props.onImagesChange(
             this.props.messageData.messageID,
             this.props.messageData.images.concat(newImage)
@@ -124,10 +160,11 @@ export default class MessageElement extends React.Component<
             !this.state.toggleEdit &&
             this.props.messageData.editedAt != 0
         ) {
-            let thisElement = ReactDOM.findDOMNode(this)
+            let thisElement = this.refToCard.current
             if (thisElement) {
-                let messageBoxWidth = $(thisElement).width()
-                if (messageBoxWidth) this.width = messageBoxWidth
+                this.getComputedWidth((width: number) => {
+                    if (width != 0) this.setState({ width })
+                })
             }
             if (this.props.editable) this.props.onFocus()
             this.setState({ toggleEdit: true })
@@ -172,6 +209,12 @@ export default class MessageElement extends React.Component<
         this.setState({ previewOpen: false })
     }
 
+    private handleResize = () => {
+        this.getComputedWidth((width: number) => {
+            if (width != 0) this.setState({ width })
+        })
+    }
+
     render() {
         let toggleEdit = this.state.toggleEdit
         let timeString = new Date(
@@ -185,7 +228,7 @@ export default class MessageElement extends React.Component<
                 className='text-white text-justify'
                 style={{
                     backgroundColor: this.props.messageData.color,
-                    minWidth: '220px',
+                    minWidth: '20%',
                     maxWidth: '75%',
                     marginLeft: this.props.editable ? 'auto' : '',
                     marginRight: this.props.editable ? '' : 'auto',
@@ -204,7 +247,7 @@ export default class MessageElement extends React.Component<
                     <MessageEditor
                         id={this.props.messageData.messageID}
                         text={this.state.text}
-                        width={this.width}
+                        width={this.state.width - 40}
                         onFinishEditClick={this.handleClickSubmit}
                         onImageChange={this.handleImageChange}
                         handlers={{
@@ -233,6 +276,7 @@ export default class MessageElement extends React.Component<
                         usePortal={false}
                     >
                         <MessageContent
+                            cardWidth={this.state.width}
                             isEditable={this.props.editable}
                             onPreviewOpen={this.handlePreviewOpen}
                             onPreviewClose={this.handlePreviewClose}
