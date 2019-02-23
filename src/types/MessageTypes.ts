@@ -67,9 +67,8 @@ export interface MessageElementState {
 }
 
 export interface MessageData {
-    senderID: string
-    senderIP: string
-    messageID: string
+    senderID: string //client will tell the id of the user but the server will later verify that
+    messageID?: string //client wont set the id
     createdAt: number
     editedAt: number
     text: string[]

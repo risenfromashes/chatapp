@@ -1,21 +1,21 @@
 import { isOpen } from '@blueprintjs/core/lib/esm/components/context-menu/contextMenu'
 
-export type ReactImageElement = 
-    React.DetailedReactHTMLElement<
-        {
-            src: string
-            className: string
-            width: number
-            onLoad: (this: HTMLImageElement) => void
-        },
-        HTMLElement
-    >
+export type ReactImageElement = React.DetailedReactHTMLElement<
+    {
+        src: string
+        className: string
+        width: number
+        onLoad: (this: HTMLImageElement) => void
+    },
+    HTMLElement
+>
 export interface Dimensions {
     height: number
     width: number
 }
 
-export interface ImageData extends Dimensions{
+export interface ImageData extends Dimensions {
+    imageName?: string
     src: string
 }
 
@@ -49,6 +49,6 @@ export interface ImagePreviewDialogueState {
     isOpen: boolean
 }
 
-export interface ImageRackProp{
+export interface ImageRackProp {
     images: ReactImageElement[]
 }

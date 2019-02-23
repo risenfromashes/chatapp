@@ -2,3 +2,4 @@
 /dist
 /src/public/css/libs
 /.vscode
+/src/server/config/config.json

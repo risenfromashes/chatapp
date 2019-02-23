@@ -17,6 +17,7 @@ import uuidv1 from 'uuid/v1'
 import multer from 'multer'
 import rendertostring from './ssr'
 import { EVENTS } from '../types/Event'
+import './config/config'
 
 const app = express()
 const server = app.listen(process.env.PORT || 80, () => {

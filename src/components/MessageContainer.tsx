@@ -425,7 +425,7 @@ export default class MessageContainer extends React.Component<
             <div id='Texts' className='w-100 px-3 messageContainer py-5'>
                 <Navbar fixedToTop={true}>
                     <NavbarGroup align={Alignment.LEFT}>
-                        <NavbarHeading>RS Chatapp</NavbarHeading>
+                        <NavbarHeading>RS Chatapps</NavbarHeading>
                         <NavbarDivider />
                         <Button
                             className={`${Classes.MINIMAL} d-none d-md-block`}
