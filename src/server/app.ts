@@ -19,7 +19,7 @@ import rendertostring from './ssr'
 import { EVENTS } from '../types/Event'
 import './config/config'
 
-const app = express()
+export const app = express()
 const server = app.listen(process.env.PORT || 80, () => {
     console.log('Connected to port 80')
 })
@@ -30,9 +30,9 @@ const diskStorage = multer.diskStorage({
     destination: (req, file, callback) => {
         callback(null, path.resolve(__dirname, '../public/image_uploads'))
     },
-    filename: (req: any, file, callback) => {
+    filename: (req: Request, file, callback) => {
         let fileName = uuidv1() + '-' + file.originalname
-        req.relPath = '../image_uploads/' + fileName
+        req.imgSrcPath = '../image_uploads/' + fileName
         callback(null, fileName)
     }
 })
@@ -116,16 +116,21 @@ app.get(
     }
 )
 
+//* this are essential routes used for user entry
+app.get('/login')
+app.post('/login')
+
 app.get('/getMessages', (request: Request, response: Response) => {
     response.json(messageData)
 })
+
 app.post(
     '/upload',
     imageUploadMiddleWare,
-    (request: any, response: Response) => {
+    (request: Request, response: Response) => {
         response.json({
             status: 'success',
-            imagePath: request.relPath
+            imagePath: request.imgSrcPath
         })
     }
 )

@@ -2,7 +2,7 @@ import mongoose from '../mongoose'
 
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { Document, Model, model } from 'mongoose'
+import { Document, Model, model, Query } from 'mongoose'
 
 export interface AuthTokenPayload {
     _id: string
@@ -10,13 +10,23 @@ export interface AuthTokenPayload {
 }
 
 export interface IUser extends Document {
-    UserName: string
+    Username: string
     Password: string
     tokens: Array<{ access: String; token: String }>
+    registerUser(): Promise<IUser>
+    getAuthToken(): Promise<string>
+    deleteAuthToken(token: string): Query<IUser>
+    unregisterUser(): Promise<IUser>
+}
+
+export interface IUserModel extends Model<IUser> {
+    getUserByCredentials(username: string, password: string): Promise<IUser>
+    getUserByToken(token: string): Promise<{ user: IUser; access: string }>
+    getUserNames(): Promise<string[]>
 }
 
 const UserSchema = new mongoose.Schema({
-    UserName: {
+    Username: {
         type: String,
         required: true,
         unique: true,
@@ -27,6 +37,7 @@ const UserSchema = new mongoose.Schema({
     Password: {
         type: String,
         required: true,
+        default: '',
         minlength: 6,
         maxlength: 20
     },
@@ -47,7 +58,7 @@ const UserSchema = new mongoose.Schema({
 
 UserSchema.pre<IUser>('save', function(next) {
     let user = this
-    if (user.isModified('Password')) {
+    if (user.isModified('Password') && user.Password != '') {
         bcrypt
             .genSalt(20)
             .then(salt => {
@@ -66,14 +77,14 @@ UserSchema.pre<IUser>('save', function(next) {
 
 //do something special here later
 //right now it just saves the user
-UserSchema.methods.registerUser = function(this: IUser) {
+UserSchema.methods.registerUser = function(this: IUser): Promise<IUser> {
     let user = this
     return user.save()
 }
 
-//todo: check .toHexString()
+// ?  .toHexString() necessary?
 
-UserSchema.methods.getAuthToken = function(this: IUser) {
+UserSchema.methods.getAuthToken = function(this: IUser): Promise<string> {
     let user = this
     let payload: AuthTokenPayload = {
         _id: user._id.toHexString(),
@@ -86,7 +97,10 @@ UserSchema.methods.getAuthToken = function(this: IUser) {
     } else return Promise.reject('error. JWT_SECRET config variable not set')
 }
 
-UserSchema.methods.deleteAuthToken = function(this: IUser, token: string) {
+UserSchema.methods.deleteAuthToken = function(
+    this: IUser,
+    token: string
+): Query<IUser> {
     let user = this
     let updateOperator = {
         $pull: {
@@ -96,25 +110,26 @@ UserSchema.methods.deleteAuthToken = function(this: IUser, token: string) {
     return user.update(updateOperator)
 }
 
-UserSchema.methods.unregisterUser = function(this: IUser) {
+UserSchema.methods.unregisterUser = function(this: IUser): Promise<IUser> {
     let user = this
     return user.remove()
 }
 
 UserSchema.statics.getUserByCredentials = function(
-    this: Model<IUser>,
+    this: IUserModel,
     username: string,
     password: string
-) {
+): Promise<IUser> {
     let User = this
-    User.findOne({ Username: username }).then(user => {
+    return User.findOne({ Username: username }).then(user => {
         if (!user) return Promise.reject('User not found')
+        else if (user.Password == '') return Promise.resolve(user)
         else {
             return bcrypt
                 .compare(password, user.Password)
                 .then(verified => {
-                    if (verified) Promise.resolve(user)
-                    else Promise.reject('Incorrect Password')
+                    if (verified) return Promise.resolve(user)
+                    else return Promise.reject('Incorrect Password')
                 })
                 .catch(err => {
                     console.log('Error trying to verify password', err)
@@ -125,9 +140,9 @@ UserSchema.statics.getUserByCredentials = function(
 }
 
 UserSchema.statics.getUserByToken = function(
-    this: Model<IUser>,
+    this: IUserModel,
     token: string
-) {
+): Promise<{ user: IUser; access: string }> {
     let User = this
     let decodedToken: any
     if (process.env.JWT_SECRET) {
@@ -135,15 +150,34 @@ UserSchema.statics.getUserByToken = function(
             decodedToken = jwt.verify(token, process.env.JWT_SECRET)
         } catch (err) {
             console.log('Error trying to verify token', err)
-            return Promise.reject('Error trying to verify auth token')
+            return Promise.reject('Invalid auth token')
         }
 
         return User.findOne({
             _id: decodedToken._id,
             'tokens.token': token,
             'tokens.access': decodedToken.access
+        }).then(user => {
+            if (!user) return Promise.reject('Could not find user')
+            else
+                return Promise.resolve({
+                    user,
+                    access: decodedToken.access
+                })
         })
     } else return Promise.reject('JWT secret is undefined')
 }
 
-export const User: Model<IUser> = model<IUser>('User', UserSchema)
+UserSchema.statics.getUserNames = function(
+    this: IUserModel
+): Promise<string[]> {
+    let User = this
+    return User.find({})
+        .select('Username')
+        .then(users => {
+            if (users.length == 0) return Promise.resolve([])
+            else return Promise.resolve(users.map(user => user.Username))
+        })
+}
+
+export const User: IUserModel = model<IUser, IUserModel>('User', UserSchema)

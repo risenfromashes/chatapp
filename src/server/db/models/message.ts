@@ -9,8 +9,17 @@ export interface IMessage extends Document {
     editedAt: number
     text: string[]
     images: ImageData[]
+    add(): Promise<IMessage>
+    delete(): Promise<IMessage>
 }
 
+export interface IMessageModel extends Model<IMessage> {
+    edit(
+        _id: string,
+        newText?: string[],
+        newImage?: ImageData[]
+    ): Promise<IMessage>
+}
 const MessageSchema: Schema = new Schema({
     senderID: {
         type: String,
@@ -47,7 +56,7 @@ const MessageSchema: Schema = new Schema({
     ]
 })
 
-MessageSchema.methods.add = function(this: IMessage) {
+MessageSchema.methods.add = function(this: IMessage): Promise<IMessage> {
     let message = this
     return User.findOne({ _id: message.senderID })
         .then(user => {
@@ -62,28 +71,38 @@ MessageSchema.methods.add = function(this: IMessage) {
         })
 }
 
-MessageSchema.methods.delete = function(this: IMessage) {
+MessageSchema.methods.delete = function(this: IMessage): Promise<IMessage> {
     let message = this
     return message.remove()
 }
 
-MessageSchema.methods.edit = function(
-    this: IMessage,
+MessageSchema.statics.edit = function(
+    this: IMessageModel,
+    _id: string,
     newText?: string[],
     newImage?: ImageData[]
-) {
-    let message = this
+): Promise<IMessage> {
+    let Message = this
+
     //* check validity of edit here
-    return message
-        .update({
-            text: newText || message.text,
-            images: newImage || message.images,
-            editedAt: new Date().getTime()
-        })
+
+    return Message.findById(_id)
         .then(message => {
+            if (!message) return Promise.reject('Could not find message.')
+            else
+                return message.update({
+                    $set: {
+                        text: newText || message.text,
+                        images: newImage || message.images,
+                        editedAt: new Date().getTime()
+                    }
+                })
+        })
+        .then((message: IMessage) => {
             if (!message) return Promise.reject('Cannot update message')
             else return Promise.resolve(message)
         })
+        .catch(err => Promise.reject(err))
 }
 
 MessageSchema.statics.search = function(
