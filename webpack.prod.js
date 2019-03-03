@@ -3,9 +3,13 @@ module.exports = {
   performance: {
     hints: false
   },
-  entry: "./src/client/index.tsx",
+  entry: {
+    app: "./src/client/index.tsx",
+    login: "./src/client/login.tsx"
+  },
   output: {
-    filename: "public/js/bundle.js"
+    filename: "[name].bundle.js",
+    path: path.resolve(__dirname, "dist/public/js/")
   },
   resolve: {
     // Add `.ts` and `.tsx` as a resolvable extension.

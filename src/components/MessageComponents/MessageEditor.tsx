@@ -1,8 +1,8 @@
 import React, { ChangeEvent, RefObject, MouseEvent } from 'react'
 import ReactDOM from 'react-dom'
-import { MessageEditorProp, MessageEditorState } from '../types/MessageTypes'
+import { MessageEditorProp, MessageEditorState } from '../../types/MessageTypes'
 import { EditableText, Button, Classes, FileInput } from '@blueprintjs/core'
-import { ImageRack } from './ImageRack'
+import { ImageRack } from '../ImageComponents/ImageRack'
 
 export class MessageEditor extends React.Component<
     MessageEditorProp,

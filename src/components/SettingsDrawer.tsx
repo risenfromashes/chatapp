@@ -19,7 +19,7 @@ export const SettingsDrawer = (props: SettingsDrawerProp) => {
             size={200}
             vertical={false}
         >
-            <Button className={`${Classes.MINIMAL} d-md-none d-block`} icon="user" large={true} text={props.ip} style={{ outline: 'none'}} />
+            <Button className={`${Classes.MINIMAL} d-md-none d-block`} icon="user" large={true} text={props.username} style={{ outline: 'none'}} />
             <Button className={Classes.MINIMAL} icon="style" large={true} intent="primary" text="Change Color" style={{ outline: 'none'}}/>
             <ColorTree onNodeClick={props.onTreeNodeClick} />
         </Drawer>

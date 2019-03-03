@@ -1,6 +1,7 @@
 import { string } from 'prop-types'
 import { MessageData } from './MessageTypes'
-import { ImageData } from './ImageTypes';
+import { ImageData } from './ImageTypes'
+import { access } from 'fs'
 
 /**
  * events:
@@ -14,7 +15,6 @@ import { ImageData } from './ImageTypes';
 
 export interface textEditEventData {
     clientID: string
-    clientIP: string
     messageID: string
     currentMessageArray: MessageData[]
     newText: string[]
@@ -22,21 +22,18 @@ export interface textEditEventData {
 
 export interface textUpdateEventData {
     clientID: string
-    clientIP: string
     messageID: string
     newText: string[]
 }
 
 export interface colorChangeEventData {
     clientID: string
-    clientIP: string
     newColor: string
     currentMessageArray: MessageData[]
 }
 
 export interface newImageEventData {
     clientID: string
-    clientIP: string
     messageID: string
     newImages: ImageData[]
     currentMessageArray: MessageData[]

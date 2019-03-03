@@ -9,9 +9,12 @@ export interface AuthTokenPayload {
     access: 'auth' | 'admin'
 }
 
-export interface IUser extends Document {
+//for creating user docs for instantiating new user
+export interface IUserDoc {
     Username: string
     Password: string
+}
+export interface IUser extends Document, IUserDoc {
     tokens: Array<{ access: String; token: String }>
     registerUser(): Promise<IUser>
     getAuthToken(): Promise<string>
@@ -37,9 +40,7 @@ const UserSchema = new mongoose.Schema({
     Password: {
         type: String,
         required: true,
-        default: '',
-        minlength: 6,
-        maxlength: 20
+        default: ''
     },
     tokens: [
         {
@@ -60,7 +61,7 @@ UserSchema.pre<IUser>('save', function(next) {
     let user = this
     if (user.isModified('Password') && user.Password != '') {
         bcrypt
-            .genSalt(20)
+            .genSalt(10)
             .then(salt => {
                 return bcrypt.hash(user.Password, salt)
             })

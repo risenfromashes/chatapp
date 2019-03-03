@@ -4,7 +4,7 @@ import {
     ImageBoxState,
     Dimensions,
     ImageCallback
-} from '../types/ImageTypes'
+} from '../../types/ImageTypes'
 import { Spinner } from '@blueprintjs/core'
 import { ImagePreviewDialogue } from './ImagePreviewDialogue'
 

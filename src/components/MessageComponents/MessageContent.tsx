@@ -1,10 +1,13 @@
 import React from 'react'
 import { Tooltip, Intent, ResizeSensor } from '@blueprintjs/core'
-import { MessageContentProps, MessageContentState } from '../types/MessageTypes'
-import { ImageBox } from './ImageBox'
-import { ImageData } from '../types/ImageTypes'
+import {
+    MessageContentProps,
+    MessageContentState
+} from '../../types/MessageTypes'
+import { ImageBox } from '../ImageComponents/ImageBox'
+import { ImageData } from '../../types/ImageTypes'
 import ReactDOM from 'react-dom'
-import { LoadScreen } from './LoadScreen'
+import { LoadScreen } from '../LoadScreen'
 
 // TODO: Change it to a text and image display component, also pass in actual width to ImageBox
 class MessageContent extends React.Component<

@@ -10,6 +10,7 @@ import {
 } from 'react'
 import { TreeEventHandler, ITreeNode, Card } from '@blueprintjs/core'
 import { ReactImageElement, ImageData } from './ImageTypes'
+import { authenticate } from '../server/middleware/authenticate'
 
 export interface MessageHeaderProp {
     sender: string
@@ -68,7 +69,8 @@ export interface MessageElementState {
 
 export interface MessageData {
     senderID: string //client will tell the id of the user but the server will later verify that
-    messageID?: string //client wont set the id
+    senderName: string
+    messageID: string //client wont set the id
     createdAt: number
     editedAt: number
     text: string[]
@@ -83,17 +85,17 @@ export interface MessageAlertProp {
 
 export interface MessageContainerProp {
     Socket?: SocketIOClient.Socket | undefined
+    UserID: string
+    Username: string
     Messages: MessageData[]
 }
 
 export interface MessageContainerState {
     Messages: MessageData[]
-    ip: string | undefined
-    id: string | undefined
     connected: boolean
+    authenticated: boolean
     drawerOpen: boolean
     attemptingConnection: boolean
-    connectionNo: number
     myColor: string
     isFocused: boolean
     newText: boolean
@@ -104,7 +106,7 @@ export interface SettingsDrawerProp {
         isOpen: boolean
         onClose: () => void
     }
-    ip: string
+    username: string
     onTreeNodeClick: (newColor: string) => void
 }
 
@@ -125,7 +127,5 @@ export interface AddButtonProp {
 }
 
 export interface ConnectionState {
-    ip: string
-    connectionNo: number
     Messages: MessageData[]
 }

@@ -10,7 +10,10 @@ import React, {
 import ReactDOM from 'react-dom'
 import $ from 'jquery'
 
-import { MessageElementProp, MessageElementState } from '../types/MessageTypes'
+import {
+    MessageElementProp,
+    MessageElementState
+} from '../../types/MessageTypes'
 
 import MessageHeader from './MessageHeader'
 import { MessageEditor } from './MessageEditor'
@@ -22,7 +25,7 @@ import {
     IResizeEntry
 } from '@blueprintjs/core'
 import MessageContent from './MessageContent'
-import { ImageData } from '../types/ImageTypes'
+import { ImageData } from '../../types/ImageTypes'
 
 export default class MessageElement extends React.Component<
     MessageElementProp,
@@ -45,7 +48,7 @@ export default class MessageElement extends React.Component<
         this.refToCard = React.createRef()
 
         this.defaultText = `User from ${
-            this.props.messageData.senderIP
+            this.props.messageData.senderName
         } wants to say something`
         if (
             this.props.messageData.text &&
@@ -240,7 +243,7 @@ export default class MessageElement extends React.Component<
             >
                 <MessageHeader
                     time={timeString}
-                    sender={this.props.messageData.senderIP}
+                    sender={this.props.messageData.senderName}
                 />
 
                 {toggleEdit && this.props.editable ? (

@@ -5,7 +5,8 @@ module.exports = {
   mode: "development",
   devtool: "inline-source-map",
   entry: {
-    app: "./src/client/index.tsx"
+    app: "./src/client/index.tsx",
+    login: "./src/client/login.tsx"
   },
   output: {
     filename: "[name].bundle.js",

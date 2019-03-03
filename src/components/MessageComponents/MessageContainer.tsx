@@ -1,22 +1,22 @@
 import React, { ReactNode, CSSProperties } from 'react'
 import $ from 'jquery'
 import uuidv1 from 'uuid/v1'
-import MessageElement from '../components/MessageElement'
+import MessageElement from './MessageElement'
 import {
     MessageContainerProp,
     MessageContainerState,
     MessageData,
     ConnectionState
-} from '../types/MessageTypes'
+} from '../../types/MessageTypes'
 
 import {
     textUpdateEventData,
     textEditEventData,
     colorChangeEventData,
     newImageEventData
-} from '../types/EventDataTypes'
+} from '../../types/EventDataTypes'
 
-import getRandomColor from '../utils/colors'
+import getRandomColor from '../../utils/colors'
 import MessageAlert, { showErrorToast } from './MessageAlert'
 import AddButton from './AddButton'
 import {
@@ -28,9 +28,9 @@ import {
     Button,
     Classes
 } from '@blueprintjs/core'
-import { SettingsDrawer } from './SettingsDrawer'
-import { ImageData } from '../types/ImageTypes'
-import { EVENTS } from '../types/Event'
+import { SettingsDrawer } from '../SettingsDrawer'
+import { ImageData } from '../../types/ImageTypes'
+import { EVENTS } from '../../types/Event'
 
 export default class MessageContainer extends React.Component<
     MessageContainerProp,
@@ -58,12 +58,10 @@ export default class MessageContainer extends React.Component<
                 this.props.Messages && this.props.Messages.length > 0
                     ? this.props.Messages
                     : [],
-            id: undefined,
-            ip: undefined,
             connected: false,
-            connectionNo: 0,
             attemptingConnection: true,
-            myColor: getRandomColor(0),
+            authenticated: false,
+            myColor: getRandomColor(new Date().getTime()),
             isFocused: false,
             newText: false,
             drawerOpen: false
@@ -87,24 +85,10 @@ export default class MessageContainer extends React.Component<
             this.socket
                 .on('connect', () => {})
                 .on('connection', (connectionState: ConnectionState) => {
-                    if (connectionState.Messages) {
-                        this.setState({
-                            Messages: connectionState.Messages,
-                            connected: true,
-                            id: this.socket ? this.socket.id : undefined,
-                            ip: connectionState.ip,
-                            connectionNo: connectionState.connectionNo,
-                            myColor: getRandomColor(
-                                connectionState.connectionNo
-                            )
-                        })
-                    } else {
-                        this.setState({
-                            connected: true,
-                            id: this.socket ? this.socket.id : undefined,
-                            ip: connectionState.ip
-                        })
-                    }
+                    this.setState({
+                        Messages: connectionState.Messages || [],
+                        connected: true
+                    })
                 })
 
             //if text is changed update the text by id
@@ -233,12 +217,7 @@ export default class MessageContainer extends React.Component<
     ): MessageData | undefined => {
         //if this instance is properly connected and the user hvnt sent empty messages, add the new message, giving
         //this instances id, ip, timestamp, color etc
-        if (
-            this.state.id &&
-            this.state.ip &&
-            this.state.connected &&
-            !this.haveSentEmptyMessage
-        ) {
+        if (this.state.connected && !this.haveSentEmptyMessage) {
             let newMessage: MessageData
             if (newMessageData) {
                 newMessage = newMessageData
@@ -246,9 +225,9 @@ export default class MessageContainer extends React.Component<
                 newMessage = {
                     text: [],
                     images: [],
+                    senderName: this.props.Username,
                     messageID: uuidv1(),
-                    senderID: this.state.id,
-                    senderIP: this.state.ip,
+                    senderID: this.props.UserID,
                     createdAt: new Date().getTime(),
                     editedAt: 0,
                     color: this.state.myColor,
@@ -262,7 +241,7 @@ export default class MessageContainer extends React.Component<
             })
 
             //this instance has sent a message
-            if (newMessage.senderID == this.state.id) this.myNewText = true
+            if (newMessage.senderID == this.props.UserID) this.myNewText = true
 
             //shows the newmessage alert only if the user has scrolled above
             let docHeight = $(document).innerHeight()
@@ -314,18 +293,12 @@ export default class MessageContainer extends React.Component<
     //for changing the message color of this user
     private changeMyColor = (newColor: string) => {
         //strictly checking connection
-        if (
-            this.state.connected &&
-            this.state.id &&
-            this.state.ip &&
-            this.socket
-        ) {
+        if (this.state.connected && this.socket) {
             let eventData: colorChangeEventData = {
-                clientID: this.state.id,
-                clientIP: this.state.ip,
+                clientID: this.props.UserID,
                 newColor,
                 currentMessageArray: this.changeColorByClientID(
-                    this.state.id,
+                    this.props.UserID,
                     newColor
                 )
             }
@@ -353,15 +326,9 @@ export default class MessageContainer extends React.Component<
     //handles change of text
     private handleTextChange = (messageID: string, newText: string[]) => {
         //if properly connected update state and the message array received from modifybyID
-        if (
-            this.state.id &&
-            this.state.ip &&
-            this.state.connected &&
-            this.socket
-        ) {
+        if (this.state.connected && this.socket) {
             let eventData: textEditEventData = {
-                clientID: this.state.id,
-                clientIP: this.state.ip,
+                clientID: this.props.UserID,
                 messageID,
                 currentMessageArray: this.modifybyID(messageID, newText),
                 newText
@@ -379,15 +346,9 @@ export default class MessageContainer extends React.Component<
         messageID: string,
         newImages: ImageData[]
     ) => {
-        if (
-            this.state.id &&
-            this.state.ip &&
-            this.state.connected &&
-            this.socket
-        ) {
+        if (this.state.connected && this.socket) {
             let eventData: newImageEventData = {
-                clientID: this.state.id,
-                clientIP: this.state.ip,
+                clientID: this.props.UserID,
                 messageID,
                 currentMessageArray: this.modifybyID(
                     messageID,
@@ -431,7 +392,7 @@ export default class MessageContainer extends React.Component<
                             className={`${Classes.MINIMAL} d-none d-md-block`}
                             icon='user'
                             large={true}
-                            text={this.state.ip}
+                            text={this.props.Username}
                             style={{
                                 outline: 'none',
                                 width: '200px',
@@ -455,7 +416,7 @@ export default class MessageContainer extends React.Component<
                         isOpen: this.state.drawerOpen,
                         onClose: this.closeDrawer
                     }}
-                    ip={this.state.ip || 'User'}
+                    username={this.props.Username}
                     onTreeNodeClick={this.changeMyColor}
                 />
 
@@ -476,7 +437,7 @@ export default class MessageContainer extends React.Component<
                             <MessageElement
                                 key={index}
                                 messageData={Message}
-                                editable={this.state.id == Message.senderID}
+                                editable={this.props.UserID == Message.senderID}
                                 onSend={this.onSend}
                                 onFocus={this.handleMessageFocus}
                                 onBlur={this.handleMessageBlur}

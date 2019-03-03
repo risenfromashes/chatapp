@@ -1,5 +1,5 @@
 import React from 'react'
-import { ImageRackProp, ReactImageElement } from '../types/ImageTypes'
+import { ImageRackProp, ReactImageElement } from '../../types/ImageTypes'
 import { element } from 'prop-types'
 
 export const ImageRack = (props: ImageRackProp) => {
